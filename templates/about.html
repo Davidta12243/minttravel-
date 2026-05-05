@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}About | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Du lịch kết hợp ẩm thực cho mọi đối tượng</h2>
+    <p>Mint Travel hướng tới các chuyến đi dễ đặt, dễ trải nghiệm, dễ nhớ. Chương trình du lịch linh hoạt theo ngân sách và sở thích của từng nhóm khách.</p>
+</section>
+
+<section class="content-card">
+    <h3>Mục tiêu doanh nghiệp</h3>
+    <ul class="plain-list">
+        <li>Kết hợp tour và ẩm thực bản địa thành 1 trải nghiệm đồng bộ.</li>
+        <li>Tối ưu chi phí bằng combo thông minh, thông tin minh bạch.</li>
+        <li>Hỗ trợ khách đa kênh: hotline, zalo và tư vấn trực tiếp.</li>
+    </ul>
+</section>
+
+<section class="content-card">
+    <h3>Sản phẩm hiện có</h3>
+    <p>Tour trọn gói theo điểm đến nổi bật, menu đặc sản bán riêng hoặc mua kèm tour để tiết kiệm, blog hướng dẫn trước chuyến đi và review thực tế từ khách hàng.</p>
+</section>
+
+<section class="content-card">
+    <h3>Feedback khách hàng</h3>
+    <div class="feedback-grid">
+        {% for item in customer_feedback %}
+        <article class="feedback-item">{{ item }}</article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

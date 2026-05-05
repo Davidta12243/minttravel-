@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Foods | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Foods - Menu đặt riêng hoặc mua kèm tour</h2>
+    <p>Có 3 lớp ưu đãi: combo món, giảm theo tổng giỏ, và giảm thêm khi mua cùng tour.</p>
+</section>
+
+<section class="content-card">
+    <form class="food-filter" method="get" action="{{ url_for('foods') }}">
+        <label for="category">Phân loại:</label>
+        <select id="category" name="category">
+            <option value="Tat ca" {% if selected_category == 'Tat ca' %}selected{% endif %}>Tất cả</option>
+            {% for category in categories %}
+            <option value="{{ category }}" {% if selected_category == category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="item_count">Số món trong giỏ:</label>
+        <input id="item_count" type="number" name="item_count" min="1" value="{{ item_count }}">
+
+        <label class="inline-check">
+            <input type="checkbox" name="with_tour" value="1" {% if with_tour %}checked{% endif %}>
+            Mua kèm tour
+        </label>
+
+        <button type="submit" class="btn-primary compact">Lọc menu</button>
+    </form>
+</section>
+
+<section class="food-list">
+    {% for item in foods %}
+    <article class="food-item">
+        <img src="{{ item['image_url'] }}" alt="{{ item['name'] }}" class="food-image">
+        <div class="food-body">
+            <div class="food-top">
+                <h3>{{ item['name'] }}</h3>
+                <form action="{{ url_for('cart_add') }}" method="post">
+                    <input type="hidden" name="food_id" value="{{ item['id'] }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button class="cart-icon" type="submit" aria-label="Thêm vào giỏ">🛒</button>
+                </form>
+            </div>
+            <p class="food-category">{{ item['category'] }}</p>
+            <p>{{ item['description'] }}</p>
+            <div class="discount-tags">
+                <span>Combo: -{{ item['combo_percent'] }}%</span>
+                <span>Kèm tour: -{{ item['tour_bundle_percent'] }}%</span>
+                <span>Từ 4 món: -10%</span>
+            </div>
+            <p class="food-price">
+                <span class="old-price">{{ '{:,.0f}'.format(item['price']) }} VND</span>
+                <strong>{{ '{:,.0f}'.format(item['discounted_price']) }} VND</strong>
+            </p>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+
+<section class="content-card">
+    <h3>Giỏ hàng của bạn</h3>
+    <form class="food-filter" method="get" action="{{ url_for('foods') }}">
+        <input type="hidden" name="category" value="{{ selected_category }}">
+        <input type="hidden" name="item_count" value="{{ item_count }}">
+        {% if with_tour %}
+        <input type="hidden" name="with_tour" value="1">
+        {% endif %}
+        <label class="inline-check">
+            <input type="checkbox" name="cart_with_tour" value="1" {% if cart_with_tour %}checked{% endif %}>
+            Tính giá giỏ hàng theo mua kèm tour
+        </label>
+        <button type="submit" class="btn-secondary compact">Áp dụng</button>
+    </form>
+
+    {% if cart_items %}
+    <div class="cart-list">
+        {% for cart in cart_items %}
+        <article class="cart-row">
+            <div>
+                <strong>{{ cart['name'] }}</strong>
+                <p>Đơn giá sau ưu đãi: {{ '{:,.0f}'.format(cart['unit_price']) }} VND</p>
+            </div>
+            <form action="{{ url_for('cart_update') }}" method="post" class="cart-inline-form">
+                <input type="hidden" name="cart_id" value="{{ cart['cart_id'] }}">
+                <input type="number" name="quantity" min="1" value="{{ cart['quantity'] }}">
+                <button class="btn-secondary compact" type="submit">Cập nhật</button>
+            </form>
+            <div class="cart-total-col">
+                <strong>{{ '{:,.0f}'.format(cart['line_total']) }} VND</strong>
+                <form action="{{ url_for('cart_remove') }}" method="post">
+                    <input type="hidden" name="cart_id" value="{{ cart['cart_id'] }}">
+                    <button class="btn-danger compact" type="submit">Xóa</button>
+                </form>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    <p class="cart-grand-total">Tổng tạm tính: {{ '{:,.0f}'.format(cart_total) }} VND</p>
+    <form action="{{ url_for('cart_checkout') }}" method="post" style="margin-top: 10px;">
+        <input type="hidden" name="cart_with_tour" value="{{ '1' if cart_with_tour else '0' }}">
+        <button class="btn-primary" type="submit">Xác nhận đặt đồ ăn</button>
+    </form>
+    {% else %}
+    <p>Giỏ hàng đang trống. Bấm icon giỏ hàng để thêm món.</p>
+    {% endif %}
+</section>
+{% endblock %}

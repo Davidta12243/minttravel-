@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Lỗi Đăng Nhập | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Lỗi đăng nhập {{ provider }}</h2>
+    <p>{{ message }}</p>
+</section>
+
+<section class="content-card">
+    <p>Bạn có thể thử lại hoặc quay về trang cá nhân.</p>
+    <div class="blog-actions">
+        {% if provider == 'Google' %}
+        <a class="btn-primary link-btn" href="{{ url_for('login_google') }}">Thử lại Google</a>
+        {% elif provider == 'Facebook' %}
+        <a class="btn-primary link-btn" href="{{ url_for('login_facebook') }}">Thử lại Facebook</a>
+        {% endif %}
+        <a class="btn-secondary link-btn" href="{{ url_for('personal') }}">Về trang cá nhân</a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết đơn đồ ăn | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Chi tiết đơn đồ ăn {{ order['order_code'] }}</h2>
+    <p>Trạng thái: {{ order['status'] }} | Tạo lúc: {{ order['created_at'] }}</p>
+</section>
+
+<section class="content-card">
+    <p><strong>Tổng tiền:</strong> {{ '{:,.0f}'.format(order['total_amount']) }} VND</p>
+    <p><strong>Mua kèm tour:</strong> {% if order['with_tour'] == 1 %}Có{% else %}Không{% endif %}</p>
+    <a class="btn-secondary link-btn" href="{{ url_for('invoice_food_pdf', order_code=order['order_code']) }}">Tải hóa đơn PDF</a>
+</section>
+
+<section class="content-card">
+    <h3>Các món trong đơn</h3>
+    <table class="order-table">
+        <thead>
+            <tr>
+                <th>Món</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item['food_name'] }}</td>
+                <td>{{ item['quantity'] }}</td>
+                <td>{{ '{:,.0f}'.format(item['unit_price']) }} VND</td>
+                <td>{{ '{:,.0f}'.format(item['line_total']) }} VND</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

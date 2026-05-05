@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Trang chủ | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Trang chủ du lịch kết hợp ăn uống</h2>
+    <p>Giao diện sáng, dễ dùng cho nhiều nhóm khách. Bạn có thể tìm tour, chọn menu ăn uống, đọc blog và đặt chỗ ngay trên cùng một hệ thống.</p>
+    <div class="blog-actions" style="margin-top: 10px;">
+        <a class="btn-primary link-btn" href="{{ url_for('journeys') }}">Xem tour hiện có</a>
+        <a class="btn-secondary link-btn" href="{{ url_for('foods') }}">Xem menu món ăn</a>
+    </div>
+</section>
+
+<section class="content-card">
+    <h3>Tour nổi bật sắp hết chỗ</h3>
+    <div class="tour-grid">
+        {% for tour in featured_tours %}
+        <article class="tour-card">
+            <img src="{{ tour['image_url'] }}" alt="{{ tour['name'] }}" class="tour-cover">
+            <div class="tour-content">
+                <h3>{{ tour['name'] }}</h3>
+                <p><strong>Giá:</strong> {{ '{:,.0f}'.format(tour['price']) }} VND</p>
+                <p class="{% if tour['slots_left'] <= low_seat_threshold %}status-low{% else %}status-ok{% endif %}">
+                    Số chỗ còn lại: {{ tour['slots_left'] }}
+                </p>
+                <a class="btn-primary link-btn" href="{{ url_for('journeys') }}">Đặt tour</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="content-card">
+    <h3>Blog mới cập nhật</h3>
+    <div class="blog-grid">
+        {% for blog in featured_blogs %}
+        <article class="blog-card">
+            <img src="{{ blog['image_url'] }}" alt="{{ blog['title'] }}" class="blog-image">
+            <div class="blog-content">
+                <p class="blog-destination">{{ blog['destination'] }}</p>
+                <h3>{{ blog['title'] }}</h3>
+                <p>{{ blog['summary'] }}</p>
+                <a class="btn-secondary link-btn" href="{{ url_for('blog_detail', blog_id=blog['id']) }}">Đọc tiếp</a>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

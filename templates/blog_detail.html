@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết Blog | Mint Travel{% endblock %}
+
+{% block content %}
+<article class="content-card">
+    <p class="blog-destination">{{ blog['destination'] }}</p>
+    <h2>{{ blog['title'] }}</h2>
+    <img src="{{ blog['image_url'] }}" alt="{{ blog['title'] }}" class="blog-detail-image">
+    <p class="blog-body">{{ blog['content'] }}</p>
+    <a class="btn-primary link-btn" href="{{ url_for('journeys') }}">Đặt ngay tour: {{ blog['tour_name'] }}</a>
+</article>
+
+<section class="content-card">
+    <h3>Review khách tham quan</h3>
+    <div class="review-list">
+        {% for review in reviews %}
+        <article class="review-item">
+            <div class="review-head">
+                <strong>{{ review['customer_name'] }}</strong>
+                <span>{{ '★' * review['rating'] }}{{ '☆' * (5 - review['rating']) }}</span>
+            </div>
+            <p>{{ review['content'] }}</p>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Chính Sách | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>{% if policy_type == 'privacy' %}Chính sách bảo mật{% else %}Điều khoản hoàn hủy{% endif %}</h2>
+    <p>Nội dung pháp lý giúp khách hàng an tâm khi chuyển khoản và đặt dịch vụ.</p>
+</section>
+
+<section class="content-card policy-text">
+    {% if policy_type == 'privacy' %}
+    <p>Chúng tôi chỉ thu thập các thông tin cần thiết cho đặt tour và giao dịch, bao gồm họ tên, số điện thoại, email và lịch sử đơn hàng.</p>
+    <p>Thông tin cá nhân được lưu trữ an toàn, không chia sẻ cho bên thứ ba nếu không có sự đồng ý của khách hàng, trừ trường hợp theo yêu cầu pháp luật.</p>
+    <p>Khách hàng có quyền yêu cầu cập nhật, chỉnh sửa hoặc xóa dữ liệu theo quy định hiện hành.</p>
+    {% else %}
+    <p>Hoàn 100% nếu hủy trong 72 giờ sau khi đặt và tour chưa khởi hành.</p>
+    <p>Hoàn 50% nếu hủy trước ngày khởi hành tối thiểu 48 giờ.</p>
+    <p>Đồ ăn đã chế biến hoặc đã giao thành công sẽ không áp dụng hoàn trả, trừ trường hợp lỗi từ nhà cung cấp.</p>
+    {% endif %}
+</section>
+{% endblock %}

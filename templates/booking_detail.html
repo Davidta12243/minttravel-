@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Chi tiết đơn tour | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Chi tiết đơn tour {{ booking['booking_code'] }}</h2>
+    <p>Trạng thái: {{ booking['status'] }} | Tạo lúc: {{ booking['created_at'] }}</p>
+</section>
+
+<section class="content-card booking-layout">
+    <img src="{{ booking['image_url'] }}" alt="{{ booking['tour_name'] }}" class="booking-cover">
+    <div>
+        <h3>{{ booking['tour_name'] }}</h3>
+        <p><strong>Lộ trình:</strong> {{ booking['route_summary'] }}</p>
+        <p><strong>Thời lượng:</strong> {{ booking['duration_days'] }} ngày</p>
+        <p><strong>Số chỗ:</strong> {{ booking['seats'] }}</p>
+        <p><strong>Đơn giá:</strong> {{ '{:,.0f}'.format(booking['tour_price']) }} VND</p>
+        <p><strong>Tổng tiền:</strong> {{ '{:,.0f}'.format(booking['tour_price'] * booking['seats']) }} VND</p>
+        <div class="inline-actions" style="margin-top: 10px;">
+            <a class="btn-secondary link-btn compact" href="{{ url_for('invoice_tour_pdf', booking_code=booking['booking_code']) }}">Tải PDF</a>
+            {% if not booking['status'].startswith('Đã hủy') %}
+            <form action="{{ url_for('cancel_tour_booking', booking_code=booking['booking_code']) }}" method="post" data-confirm-message="Bạn chắc chắn muốn hủy đơn tour {{ booking['booking_code'] }}?">
+                <button class="btn-danger compact" type="submit">Hủy đơn</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

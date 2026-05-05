@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Trang Cá Nhân | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Trang cá nhân và đơn hàng</h2>
+    <p>Bạn có thể xem lại tour đã đặt, mã đặt chỗ và trạng thái xử lý.</p>
+</section>
+
+{% if not user %}
+<section class="content-card">
+    <p>Chưa có tài khoản đăng nhập. Vui lòng đăng nhập bằng Google/Facebook để xem đơn hàng.</p>
+</section>
+{% else %}
+
+<section class="content-card">
+    <h3>Thông tin khách hàng</h3>
+    <p><strong>Họ tên:</strong> {{ user['full_name'] }}</p>
+    <p><strong>Số điện thoại:</strong> {{ user['phone'] }}</p>
+    <p><strong>Email:</strong> {{ user['email'] }}</p>
+</section>
+
+<section class="content-card">
+    <h3>Bộ lọc lịch sử đơn</h3>
+    <form class="history-filter" method="get" action="{{ url_for('personal') }}">
+        <label for="booking_status">Trạng thái tour:</label>
+        <select id="booking_status" name="booking_status">
+            <option value="all" {% if booking_status == 'all' %}selected{% endif %}>Tất cả</option>
+            <option value="Chờ xác nhận" {% if booking_status == 'Chờ xác nhận' %}selected{% endif %}>Chờ xác nhận</option>
+            <option value="Đã xác nhận" {% if booking_status == 'Đã xác nhận' %}selected{% endif %}>Đã xác nhận</option>
+            <option value="Đã hủy - hoàn 100%" {% if booking_status == 'Đã hủy - hoàn 100%' %}selected{% endif %}>Đã hủy - hoàn 100%</option>
+            <option value="Đã hủy - hoàn 50%" {% if booking_status == 'Đã hủy - hoàn 50%' %}selected{% endif %}>Đã hủy - hoàn 50%</option>
+        </select>
+
+        <label for="food_status">Trạng thái đồ ăn:</label>
+        <select id="food_status" name="food_status">
+            <option value="all" {% if food_status == 'all' %}selected{% endif %}>Tất cả</option>
+            <option value="Chờ xác nhận" {% if food_status == 'Chờ xác nhận' %}selected{% endif %}>Chờ xác nhận</option>
+            <option value="Đã hủy - hoàn 100%" {% if food_status == 'Đã hủy - hoàn 100%' %}selected{% endif %}>Đã hủy - hoàn 100%</option>
+            <option value="Đơn đã xử lý, không thể hủy" {% if food_status == 'Đơn đã xử lý, không thể hủy' %}selected{% endif %}>Đơn đã xử lý</option>
+        </select>
+
+        <label for="from_date">Từ ngày:</label>
+        <input id="from_date" type="date" name="from_date" value="{{ from_date }}">
+
+        <label for="to_date">Đến ngày:</label>
+        <input id="to_date" type="date" name="to_date" value="{{ to_date }}">
+
+        <button type="submit" class="btn-primary compact">Lọc đơn</button>
+        <a href="{{ url_for('personal') }}" class="btn-secondary link-btn compact">Xóa lọc</a>
+    </form>
+</section>
+
+<section class="content-card">
+    <h3>Lịch sử đặt tour</h3>
+    <table class="order-table">
+        <thead>
+            <tr>
+                <th>Mã đặt chỗ</th>
+                <th>Tour</th>
+                <th>Số chỗ</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td>{{ booking['booking_code'] }}</td>
+                <td>{{ booking['tour_name'] }}</td>
+                <td>{{ booking['seats'] }}</td>
+                <td>{{ '{:,.0f}'.format(booking['tour_price'] * booking['seats']) }} VND</td>
+                <td>{{ booking['status'] }}</td>
+                <td>{{ booking['created_at'] }}</td>
+                <td>
+                    <div class="inline-actions">
+                        <a class="btn-secondary link-btn compact" href="{{ url_for('booking_detail', booking_code=booking['booking_code']) }}">Chi tiết</a>
+                        <a class="btn-secondary link-btn compact" href="{{ url_for('invoice_tour_pdf', booking_code=booking['booking_code']) }}">PDF</a>
+                        {% if not booking['status'].startswith('Đã hủy') %}
+                        <form action="{{ url_for('cancel_tour_booking', booking_code=booking['booking_code']) }}" method="post" data-confirm-message="Bạn chắc chắn muốn hủy đơn tour {{ booking['booking_code'] }}?">
+                            <button class="btn-danger compact" type="submit">Hủy</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not bookings %}
+            <tr>
+                <td colspan="7">Bạn chưa có đơn đặt tour nào.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+
+<section class="content-card">
+    <h3>Lịch sử đơn đồ ăn</h3>
+    <table class="order-table">
+        <thead>
+            <tr>
+                <th>Mã đơn</th>
+                <th>Tổng tiền</th>
+                <th>Kèm tour</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in food_orders %}
+            <tr>
+                <td>{{ order['order_code'] }}</td>
+                <td>{{ '{:,.0f}'.format(order['total_amount']) }} VND</td>
+                <td>{% if order['with_tour'] == 1 %}Có{% else %}Không{% endif %}</td>
+                <td>{{ order['status'] }}</td>
+                <td>{{ order['created_at'] }}</td>
+                <td>
+                    <div class="inline-actions">
+                        <a class="btn-secondary link-btn compact" href="{{ url_for('food_order_detail', order_code=order['order_code']) }}">Chi tiết</a>
+                        <a class="btn-secondary link-btn compact" href="{{ url_for('invoice_food_pdf', order_code=order['order_code']) }}">PDF</a>
+                        {% if order['status'] == 'Chờ xác nhận' %}
+                        <form action="{{ url_for('cancel_food_order', order_code=order['order_code']) }}" method="post" data-confirm-message="Bạn chắc chắn muốn hủy đơn đồ ăn {{ order['order_code'] }}?">
+                            <button class="btn-danger compact" type="submit">Hủy</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not food_orders %}
+            <tr>
+                <td colspan="6">Bạn chưa có đơn đồ ăn nào.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+{% endblock %}

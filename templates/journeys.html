@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}Journeys | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Journeys - Chọn chuyến đi đáng nhớ</h2>
+    <p>Danh sách tour khả dụng cập nhật theo thời gian thực, có hiệu ứng khan hiếm khi sắp hết chỗ.</p>
+</section>
+
+<section class="tour-grid">
+    {% for tour in tours %}
+    <article class="tour-card">
+        <img src="{{ tour['image_url'] }}" alt="{{ tour['name'] }}" class="tour-cover">
+        <div class="tour-content">
+            <h3>{{ tour['name'] }}</h3>
+            <p class="route-line">{{ tour['route_summary'] }}</p>
+            <p><strong>Giá:</strong> {{ '{:,.0f}'.format(tour['price']) }} VND</p>
+            <p><strong>Thời lượng:</strong> {{ tour['duration_days'] }} ngày</p>
+            <p><strong>Thời gian còn lại:</strong> {{ tour['hours_left'] }} giờ</p>
+            <p><strong>Số chỗ đã đặt:</strong> {{ tour['slots_booked'] }}</p>
+            <p class="{% if tour['slots_left'] <= low_seat_threshold %}status-low{% else %}status-ok{% endif %}">
+                Số chỗ còn lại: {{ tour['slots_left'] }}
+            </p>
+            <form action="{{ url_for('book_tour', tour_id=tour['id']) }}" method="post" class="book-form">
+                <input type="number" name="seats" value="1" min="1" class="seat-input">
+                <button type="submit" class="btn-primary">Đặt chỗ ngay</button>
+            </form>
+            <button type="button" class="btn-secondary">Nhận tư vấn</button>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% endblock %}

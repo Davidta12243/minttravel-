@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Blogs | Mint Travel{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+    <h2>Blogs - Cẩm nang điểm đến nổi bật</h2>
+    <p>Bài viết tóm tắt nhanh để bạn hình dung chuyến đi, kèm link đặt tour trực tiếp.</p>
+</section>
+
+<section class="blog-grid">
+    {% for blog in blogs %}
+    <article class="blog-card">
+        <img src="{{ blog['image_url'] }}" alt="{{ blog['title'] }}" class="blog-image">
+        <div class="blog-content">
+            <p class="blog-destination">{{ blog['destination'] }}</p>
+            <h3>{{ blog['title'] }}</h3>
+            <p>{{ blog['summary'] }}</p>
+            <div class="blog-actions">
+                <a class="btn-secondary link-btn" href="{{ url_for('blog_detail', blog_id=blog['id']) }}">Đọc bài viết</a>
+                <a class="btn-primary link-btn" href="{{ url_for('journeys') }}">Tour liên kết: {{ blog['tour_name'] }}</a>
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</section>
+{% endblock %}

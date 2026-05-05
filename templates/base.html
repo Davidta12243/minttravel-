@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Du lịch và Ăn uống{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="logo-area">
+            <h1>MINT TRAVEL</h1>
+            <p>Đi là mê, ăn là phê.</p>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('about') }}">About</a></li>
+                <li><a href="{{ url_for('journeys') }}">Journeys</a></li>
+                <li><a href="{{ url_for('foods') }}">Foods ({{ cart_count }})</a></li>
+                <li><a href="{{ url_for('blogs') }}">Blogs</a></li>
+            </ul>
+        </nav>
+        <div class="auth-controls">
+            <a class="account-link" href="{{ url_for('personal') }}">Đơn hàng của tôi</a>
+            {% if current_user %}
+            <span class="auth-user">{{ current_user['full_name'] }}</span>
+            <a class="auth-action" href="{{ url_for('logout') }}">Đăng xuất</a>
+            {% else %}
+            {% if google_oauth_enabled %}
+            <a class="auth-action" href="{{ url_for('login_google') }}">Google</a>
+            {% endif %}
+            {% if facebook_oauth_enabled %}
+            <a class="auth-action" href="{{ url_for('login_facebook') }}">Facebook</a>
+            {% endif %}
+            {% if not google_oauth_enabled and not facebook_oauth_enabled %}
+            <span class="auth-hint">Thêm biến môi trường để bật OAuth</span>
+            {% endif %}
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="page-shell">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <section class="flash-stack">
+            {% for category, message in messages %}
+            <div class="flash-item flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </section>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <div class="floating-actions">
+        <a href="tel:0900000000" class="floating-btn hotline-btn">Hotline</a>
+        <a href="https://zalo.me/0900000000" class="floating-btn zalo-btn" target="_blank" rel="noreferrer">Zalo</a>
+    </div>
+
+    <div id="confirmModal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+        <div class="confirm-box">
+            <h3 id="confirmTitle">Xác nhận thao tác</h3>
+            <p id="confirmMessage">Bạn có chắc muốn tiếp tục?</p>
+            <div class="confirm-actions">
+                <button type="button" id="confirmCancel" class="btn-secondary">Quay lại</button>
+                <button type="button" id="confirmOk" class="btn-danger">Đồng ý</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div>
+                <h3>MINT TRAVEL</h3>
+                <p class="muted">Sống trọn từng hành trình.</p>
+                <p>Mã số kinh doanh: 11257141</p>
+                <p>Đã đăng ký Bộ Công Thương</p>
+            </div>
+            <div>
+                <h4>Liên hệ</h4>
+                <p>Chủ sở hữu: Nguyễn Văn A</p>
+                <p>SDT: 0900 000 000</p>
+                <p>Email: support@minttravel.vn</p>
+                <p>Địa chỉ: Hai Bà Trưng, Hà Nội</p>
+            </div>
+            <div>
+                <h4>Chính sách</h4>
+                <p><a href="{{ url_for('policy_privacy') }}">Chính sách bảo mật</a></p>
+                <p><a href="{{ url_for('policy_cancellation') }}">Điều khoản hoàn hủy tour/đồ ăn</a></p>
+            </div>
+            <div>
+                <h4>Mạng xã hội</h4>
+                <p><a href="#">Instagram</a></p>
+                <p><a href="#">TikTok</a></p>
+                <p><a href="#">YouTube</a></p>
+            </div>
+        </div>
+        <p class="copyright">© {{ current_year }} Mint Travel. All rights reserved.</p>
+    </footer>
+
+    <script>
+        (() => {
+            const modal = document.getElementById('confirmModal');
+            const messageNode = document.getElementById('confirmMessage');
+            const okBtn = document.getElementById('confirmOk');
+            const cancelBtn = document.getElementById('confirmCancel');
+            let pendingForm = null;
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target;
+                if (!(form instanceof HTMLFormElement)) {
+                    return;
+                }
+                const msg = form.dataset.confirmMessage;
+                if (!msg || form.dataset.confirmed === '1') {
+                    return;
+                }
+
+                event.preventDefault();
+                pendingForm = form;
+                messageNode.textContent = msg;
+                modal.classList.remove('hidden');
+            });
+
+            okBtn.addEventListener('click', () => {
+                if (!pendingForm) {
+                    return;
+                }
+                pendingForm.dataset.confirmed = '1';
+                modal.classList.add('hidden');
+                pendingForm.submit();
+                pendingForm = null;
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                pendingForm = null;
+                modal.classList.add('hidden');
+            });
+
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    pendingForm = null;
+                    modal.classList.add('hidden');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
