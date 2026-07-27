@@ -4,27 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Du lịch và Ăn uống{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <header class="site-header">
-        <div class="logo-area">
-            <h1>MINT TRAVEL</h1>
-            <p>Đi là mê, ăn là phê.</p>
-        </div>
+        <a href="{{ url_for('home') }}" class="logo-area">
+            <div class="logo-text">
+                <h1><span class="brand-orange">INNER</span><span class="brand-navy">COMPASS</span></h1>
+                <p class="slogan-text">Đi là mê, ăn là phê.</p>
+            </div>
+            <img src="{{ url_for('static', filename='images/jmc_logo.png') }}" alt="JMC Vietnam Logo" class="brand-logo">
+        </a>
         <nav>
             <ul>
-                <li><a href="{{ url_for('about') }}">About</a></li>
-                <li><a href="{{ url_for('journeys') }}">Journeys</a></li>
-                <li><a href="{{ url_for('foods') }}">Foods ({{ cart_count }})</a></li>
-                <li><a href="{{ url_for('blogs') }}">Blogs</a></li>
+                <li><a href="{{ url_for('about') }}" data-i18n="nav_intro">Giới thiệu</a></li>
+                <li><a href="{{ url_for('journeys') }}" data-i18n="nav_journey">Hành trình</a></li>
+                <li>
+                    <a href="{{ url_for('foods') }}" class="nav-foods-link">
+                        <span data-i18n="nav_food">Ẩm thực</span>
+                        <span class="nav-foods-count">({{ cart_count }})</span>
+                    </a>
+                </li>
+                <li><a href="{{ url_for('blogs') }}" data-i18n="nav_blog">Blog</a></li>
             </ul>
         </nav>
         <div class="auth-controls">
-            <a class="account-link" href="{{ url_for('personal') }}">Đơn hàng của tôi</a>
+            <a class="account-link" href="{{ url_for('personal') }}" data-i18n="nav_orders">Đơn hàng của tôi</a>
             {% if current_user %}
             <span class="auth-user">{{ current_user['full_name'] }}</span>
-            <a class="auth-action" href="{{ url_for('logout') }}">Đăng xuất</a>
+            <a class="auth-action" href="{{ url_for('logout') }}" data-i18n="nav_logout">Đăng xuất</a>
             {% else %}
             {% if google_oauth_enabled %}
             <a class="auth-action" href="{{ url_for('login_google') }}">Google</a>
@@ -32,7 +44,10 @@
             {% if facebook_oauth_enabled %}
             <a class="auth-action" href="{{ url_for('login_facebook') }}">Facebook</a>
             {% endif %}
-            {% if not google_oauth_enabled and not facebook_oauth_enabled %}
+            {% if apple_oauth_enabled %}
+            <a class="auth-action" href="{{ url_for('login_apple') }}">Apple</a>
+            {% endif %}
+            {% if not google_oauth_enabled and not facebook_oauth_enabled and not apple_oauth_enabled %}
             <span class="auth-hint">Thêm biến môi trường để bật OAuth</span>
             {% endif %}
             {% endif %}
@@ -69,33 +84,156 @@
     </div>
 
     <footer class="site-footer">
-        <div class="footer-grid">
-            <div>
-                <h3>MINT TRAVEL</h3>
-                <p class="muted">Sống trọn từng hành trình.</p>
-                <p>Mã số kinh doanh: 11257141</p>
-                <p>Đã đăng ký Bộ Công Thương</p>
-            </div>
-            <div>
-                <h4>Liên hệ</h4>
-                <p>Chủ sở hữu: Nguyễn Văn A</p>
-                <p>SDT: 0900 000 000</p>
-                <p>Email: support@minttravel.vn</p>
-                <p>Địa chỉ: Hai Bà Trưng, Hà Nội</p>
-            </div>
-            <div>
-                <h4>Chính sách</h4>
-                <p><a href="{{ url_for('policy_privacy') }}">Chính sách bảo mật</a></p>
-                <p><a href="{{ url_for('policy_cancellation') }}">Điều khoản hoàn hủy tour/đồ ăn</a></p>
-            </div>
-            <div>
-                <h4>Mạng xã hội</h4>
-                <p><a href="#">Instagram</a></p>
-                <p><a href="#">TikTok</a></p>
-                <p><a href="#">YouTube</a></p>
+        <!-- Language Switcher Bar -->
+        <div class="lang-bar">
+            <div class="lang-bar-inner">
+                <span class="lang-item" data-lang="vi">Việt Nam (Tiếng Việt)</span>
+                <span class="lang-sep">|</span>
+                <span class="lang-item" data-lang="en">Global (English)</span>
+                <span class="lang-sep">|</span>
+                <span class="lang-item" data-lang="ms">Malaysia (Bahasa Melayu)</span>
+                <span class="lang-sep">|</span>
+                <span class="lang-item" data-lang="id">Indonesia (Bahasa Indonesia)</span>
+                <span class="lang-sep">|</span>
+                <span class="lang-item" data-lang="th">Thailand (ภาษาไทย)</span>
+                <span class="lang-sep">|</span>
+                <span class="lang-item" data-lang="ja">日本語</span>
+                <span class="lang-sep">|</span>
+                <span class="lang-item" data-lang="ko">한국어</span>
             </div>
         </div>
-        <p class="copyright">© {{ current_year }} Mint Travel. All rights reserved.</p>
+        <div class="footer-grid">
+            <!-- Row 1, Col 1: Brand Info -->
+            <div class="footer-col">
+                <div class="footer-brand-row">
+                    <h3>INNERCOMPASS</h3>
+                    <img src="{{ url_for('static', filename='images/jmc_logo.png') }}" alt="JMC Vietnam" class="footer-brand-logo">
+                </div>
+                <p class="muted" data-i18n="footer_slogan">Sống trọn từng hành trình.</p>
+                <p>Mã số kinh doanh: 11257141</p>
+                <p>Đã đăng ký Bộ Công Thương</p>
+                <div class="bct-logos-container">
+                    <a href="http://online.gov.vn" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ url_for('static', filename='images/logo_bct_blue.png') }}" alt="Đã thông báo Bộ Công Thương" class="bct-logo">
+                    </a>
+                    <a href="http://online.gov.vn" target="_blank" rel="noopener noreferrer">
+                        <img src="{{ url_for('static', filename='images/logo_bct_red.svg') }}" alt="Đã đăng ký Bộ Công Thương" class="bct-logo">
+                    </a>
+                </div>
+            </div>
+            <!-- Row 1, Col 2: Contact Info -->
+            <div class="footer-col">
+                <h4 data-i18n="footer_contact">Liên hệ</h4>
+                <p>Chủ sở hữu: Tạ Minh Quân</p>
+                <p>Số điện thoại: 0986070107</p>
+                <p>Email: minhquan070107@gmail.com</p>
+                <p>Địa chỉ: 25 Ngõ 44 Nguyễn Phúc Lai, Phường Ô Chợ Dừa, Thành Phố Hà Nội</p>
+            </div>
+            <!-- Row 1, Col 3: Policies -->
+            <div class="footer-col">
+                <h4 data-i18n="footer_policy">Chính sách</h4>
+                <p><a href="{{ url_for('policy_privacy') }}" data-i18n="policy_privacy">Chính sách bảo mật</a></p>
+                <p><a href="{{ url_for('policy_cancellation') }}" data-i18n="policy_cancel">Điều khoản hoàn hủy tour/đồ ăn</a></p>
+            </div>
+
+            <!-- Row 2, Col 1: Social Media with Icons -->
+            <div class="footer-col margin-top-col">
+                <h4 data-i18n="footer_social">Theo dõi chúng tôi trên</h4>
+                <ul class="social-list">
+                    <li><a href="#" class="social-link"><span class="social-icon fb-icon"><i class="fa-brands fa-facebook-f"></i></span> Facebook</a></li>
+                    <li><a href="#" class="social-link"><span class="social-icon insta-icon"><i class="fa-brands fa-instagram"></i></span> Instagram</a></li>
+                    <li><a href="#" class="social-link"><span class="social-icon tiktok-icon"><i class="fa-brands fa-tiktok"></i></span> TikTok</a></li>
+                    <li><a href="#" class="social-link"><span class="social-icon youtube-icon"><i class="fa-brands fa-youtube"></i></span> YouTube</a></li>
+                    <li><a href="#" class="social-link"><span class="social-icon telegram-icon"><i class="fa-brands fa-telegram"></i></span> Telegram</a></li>
+                </ul>
+            </div>
+            <!-- Row 2, Col 2: App Download Buttons -->
+            <div class="footer-col margin-top-col">
+                <h4 data-i18n="footer_app">Tải ứng dụng Innercompass</h4>
+                <div class="app-download-container">
+                    <a href="#" class="app-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" class="app-badge-img">
+                    </a>
+                    <a href="#" class="app-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" class="app-badge-img">
+                    </a>
+                </div>
+            </div>
+            <!-- Row 2, Col 3: Payment Partners -->
+            <div class="footer-col margin-top-col">
+                <h4 data-i18n="footer_payment">Đối tác thanh toán</h4>
+                <div class="payment-grid">
+                    <div class="payment-card" title="VISA">
+                        <svg class="payment-svg" viewBox="0 0 100 32"><text x="12" y="24" font-family="'Inter', sans-serif" font-weight="900" font-style="italic" fill="#1A1F71" font-size="24">VISA</text></svg>
+                    </div>
+                    <div class="payment-card" title="MasterCard">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <circle cx="42" cy="16" r="10" fill="#EB001B" opacity="0.9"/>
+                            <circle cx="58" cy="16" r="10" fill="#F79E1B" opacity="0.9"/>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="JCB">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <rect x="25" y="6" width="15" height="20" rx="2" fill="#003580"/>
+                            <rect x="42" y="6" width="15" height="20" rx="2" fill="#008559"/>
+                            <rect x="59" y="6" width="15" height="20" rx="2" fill="#D21034"/>
+                            <text x="29" y="20" font-family="sans-serif" font-weight="bold" fill="#FFF" font-size="10">J</text>
+                            <text x="46" y="20" font-family="sans-serif" font-weight="bold" fill="#FFF" font-size="10">C</text>
+                            <text x="63" y="20" font-family="sans-serif" font-weight="bold" fill="#FFF" font-size="10">B</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="VietQR">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="15" y="22" font-family="'Inter', sans-serif" font-weight="bold" fill="#00529C" font-size="16">Viet</text>
+                            <text x="52" y="22" font-family="'Inter', sans-serif" font-weight="bold" fill="#EA2027" font-size="16">QR</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="MoMo">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <rect x="36" y="5" width="28" height="22" rx="5" fill="#A50064"/>
+                            <text x="40" y="19" font-family="sans-serif" font-weight="bold" fill="#FFF" font-size="8">momo</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="Techcombank">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="10" y="20" font-family="'Inter', sans-serif" font-weight="bold" fill="#EA2027" font-size="11">TECHCOM</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="VPBank">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="22" y="21" font-family="'Inter', sans-serif" font-weight="bold" fill="#009A51" font-size="16">VP</text>
+                            <text x="44" y="21" font-family="'Inter', sans-serif" fill="#57606F" font-size="14">Bank</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="Vietcombank">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="10" y="21" font-family="'Inter', sans-serif" font-weight="bold" fill="#008000" font-size="11">Vietcombank</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="OnePay">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="20" y="21" font-family="'Inter', sans-serif" font-weight="bold" fill="#0054A6" font-size="15">OnePay</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="MB Bank">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="32" y="22" font-family="'Inter', sans-serif" font-weight="bold" fill="#0E2283" font-size="18">MB</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="ACB">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="32" y="22" font-family="'Inter', sans-serif" font-weight="bold" fill="#0072BC" font-size="18">ACB</text>
+                        </svg>
+                    </div>
+                    <div class="payment-card" title="BIDV">
+                        <svg class="payment-svg" viewBox="0 0 100 32">
+                            <text x="30" y="22" font-family="'Inter', sans-serif" font-weight="bold" fill="#005AAB" font-size="16">BIDV</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <p class="copyright">© {{ current_year }} Innercompass. All rights reserved.</p>
     </footer>
 
     <script>
@@ -144,6 +282,154 @@
                 }
             });
         })();
+    </script>
+
+    <!-- i18n Language Switcher System -->
+    <script>
+    (() => {
+        const TRANSLATIONS = {
+            vi: {
+                nav_intro: 'Giới thiệu', nav_journey: 'Hành trình', nav_food: 'Ẩm thực', nav_blog: 'Blog',
+                nav_orders: 'Đơn hàng của tôi', nav_logout: 'Đăng xuất',
+                hero_title: 'Hơn cả một chuyến đi, đó là trải nghiệm',
+                hero_sub: 'Khám phá các tour du lịch độc đáo và ẩm thực địa phương cùng Innercompass',
+                tab_tour: '✈️ Tour Du Lịch', tab_food: '🍲 Ẩm Thực', tab_blog: '✍️ Góc Cảm Hứng',
+                footer_slogan: 'Sống trọn từng hành trình.',
+                footer_contact: 'Liên hệ', footer_policy: 'Chính sách',
+                footer_social: 'Theo dõi chúng tôi trên',
+                footer_app: 'Tải ứng dụng Innercompass',
+                footer_payment: 'Đối tác thanh toán',
+                policy_privacy: 'Chính sách bảo mật',
+                policy_cancel: 'Điều khoản hoàn hủy tour/đồ ăn',
+            },
+            en: {
+                nav_intro: 'About', nav_journey: 'Journeys', nav_food: 'Food', nav_blog: 'Blog',
+                nav_orders: 'My Orders', nav_logout: 'Logout',
+                hero_title: 'More than a trip — it\'s an experience',
+                hero_sub: 'Explore unique travel tours and local cuisine with Innercompass',
+                tab_tour: '✈️ Travel Tours', tab_food: '🍲 Food & Drink', tab_blog: '✍️ Inspiration',
+                footer_slogan: 'Live every journey fully.',
+                footer_contact: 'Contact', footer_policy: 'Policies',
+                footer_social: 'Follow us on',
+                footer_app: 'Download Innercompass App',
+                footer_payment: 'Payment Partners',
+                policy_privacy: 'Privacy Policy',
+                policy_cancel: 'Cancellation Policy',
+            },
+            ms: {
+                nav_intro: 'Tentang', nav_journey: 'Perjalanan', nav_food: 'Makanan', nav_blog: 'Blog',
+                nav_orders: 'Pesanan Saya', nav_logout: 'Log Keluar',
+                hero_title: 'Lebih daripada sekadar perjalanan — ia satu pengalaman',
+                hero_sub: 'Terokai pakej pelancongan unik dan masakan tempatan bersama Innercompass',
+                tab_tour: '✈️ Pakej Pelancongan', tab_food: '🍲 Makanan', tab_blog: '✍️ Inspirasi',
+                footer_slogan: 'Hayati setiap perjalanan.',
+                footer_contact: 'Hubungi', footer_policy: 'Polisi',
+                footer_social: 'Ikuti kami di',
+                footer_app: 'Muat turun App Innercompass',
+                footer_payment: 'Rakan Pembayaran',
+                policy_privacy: 'Polisi Privasi',
+                policy_cancel: 'Polisi Pembatalan',
+            },
+            id: {
+                nav_intro: 'Tentang', nav_journey: 'Perjalanan', nav_food: 'Kuliner', nav_blog: 'Blog',
+                nav_orders: 'Pesanan Saya', nav_logout: 'Keluar',
+                hero_title: 'Lebih dari sekadar perjalanan — ini adalah pengalaman',
+                hero_sub: 'Jelajahi paket wisata unik dan kuliner lokal bersama Innercompass',
+                tab_tour: '✈️ Paket Wisata', tab_food: '🍲 Kuliner', tab_blog: '✍️ Inspirasi',
+                footer_slogan: 'Jalani setiap perjalanan sepenuhnya.',
+                footer_contact: 'Hubungi', footer_policy: 'Kebijakan',
+                footer_social: 'Ikuti kami di',
+                footer_app: 'Unduh Aplikasi Innercompass',
+                footer_payment: 'Mitra Pembayaran',
+                policy_privacy: 'Kebijakan Privasi',
+                policy_cancel: 'Kebijakan Pembatalan',
+            },
+            th: {
+                nav_intro: 'เกี่ยวกับ', nav_journey: 'การเดินทาง', nav_food: 'อาหาร', nav_blog: 'บล็อก',
+                nav_orders: 'คำสั่งซื้อของฉัน', nav_logout: 'ออกจากระบบ',
+                hero_title: 'มากกว่าการเดินทาง — คือประสบการณ์',
+                hero_sub: 'สำรวจทัวร์ท่องเที่ยวที่ไม่เหมือนใครและอาหารท้องถิ่นกับ Innercompass',
+                tab_tour: '✈️ ทัวร์ท่องเที่ยว', tab_food: '🍲 อาหาร', tab_blog: '✍️ แรงบันดาลใจ',
+                footer_slogan: 'ใช้ชีวิตทุกการเดินทางอย่างเต็มที่',
+                footer_contact: 'ติดต่อ', footer_policy: 'นโยบาย',
+                footer_social: 'ติดตามเราใน',
+                footer_app: 'ดาวน์โหลดแอป Innercompass',
+                footer_payment: 'พันธมิตรการชำระเงิน',
+                policy_privacy: 'นโยบายความเป็นส่วนตัว',
+                policy_cancel: 'นโยบายการยกเลิก',
+            },
+            ja: {
+                nav_intro: '紹介', nav_journey: '旅行', nav_food: 'グルメ', nav_blog: 'ブログ',
+                nav_orders: '注文履歴', nav_logout: 'ログアウト',
+                hero_title: '旅行以上の体験を',
+                hero_sub: 'Innercompassで独自のツアーや地元グルメを発見しよう',
+                tab_tour: '✈️ ツアー', tab_food: '🍲 グルメ', tab_blog: '✍️ インスピレーション',
+                footer_slogan: 'すべての旅を心ゆくまで。',
+                footer_contact: 'お問い合わせ', footer_policy: 'ポリシー',
+                footer_social: 'フォローする',
+                footer_app: 'Innercompassアプリをダウンロード',
+                footer_payment: '決済パートナー',
+                policy_privacy: 'プライバシーポリシー',
+                policy_cancel: 'キャンセルポリシー',
+            },
+            ko: {
+                nav_intro: '소개', nav_journey: '여행', nav_food: '음식', nav_blog: '블로그',
+                nav_orders: '내 주문', nav_logout: '로그아웃',
+                hero_title: '단순한 여행 그 이상의 경험',
+                hero_sub: 'Innercompass와 함께 독특한 투어와 현지 음식을 발견하세요',
+                tab_tour: '✈️ 여행 패키지', tab_food: '🍲 음식', tab_blog: '✍️ 영감',
+                footer_slogan: '모든 여행을 완전하게.',
+                footer_contact: '연락처', footer_policy: '정책',
+                footer_social: '팔로우하세요',
+                footer_app: 'Innercompass 앱 다운로드',
+                footer_payment: '결제 파트너',
+                policy_privacy: '개인정보 처리방침',
+                policy_cancel: '취소 정책',
+            },
+        };
+
+        // Map elements to translation keys via data-i18n
+        const I18N_MAP = [
+            { sel: '[data-i18n="nav_intro"]',    key: 'nav_intro' },
+            { sel: '[data-i18n="nav_journey"]',  key: 'nav_journey' },
+            { sel: '[data-i18n="nav_food"]',     key: 'nav_food' },
+            { sel: '[data-i18n="nav_blog"]',     key: 'nav_blog' },
+            { sel: '[data-i18n="nav_orders"]',   key: 'nav_orders' },
+            { sel: '[data-i18n="nav_logout"]',   key: 'nav_logout' },
+            { sel: '[data-i18n="footer_slogan"]',  key: 'footer_slogan' },
+            { sel: '[data-i18n="footer_contact"]', key: 'footer_contact' },
+            { sel: '[data-i18n="footer_policy"]',  key: 'footer_policy' },
+            { sel: '[data-i18n="footer_social"]',  key: 'footer_social' },
+            { sel: '[data-i18n="footer_app"]',     key: 'footer_app' },
+            { sel: '[data-i18n="footer_payment"]', key: 'footer_payment' },
+            { sel: '[data-i18n="policy_privacy"]', key: 'policy_privacy' },
+            { sel: '[data-i18n="policy_cancel"]',  key: 'policy_cancel' },
+        ];
+
+        function applyLang(lang) {
+            const t = TRANSLATIONS[lang] || TRANSLATIONS['vi'];
+            I18N_MAP.forEach(({ sel, key }) => {
+                document.querySelectorAll(sel).forEach(el => {
+                    if (t[key]) el.textContent = t[key];
+                });
+            });
+            // Update active lang highlight
+            document.querySelectorAll('.lang-item').forEach(el => {
+                el.classList.toggle('lang-active', el.dataset.lang === lang);
+            });
+            // Store preference
+            localStorage.setItem('ic_lang', lang);
+        }
+
+        // Attach click listeners
+        document.querySelectorAll('.lang-item').forEach(el => {
+            el.addEventListener('click', () => applyLang(el.dataset.lang));
+        });
+
+        // Apply saved language on page load
+        const saved = localStorage.getItem('ic_lang') || 'vi';
+        applyLang(saved);
+    })();
     </script>
 </body>
 </html>

@@ -47,6 +47,18 @@ if facebook_client_id and facebook_client_secret:
         client_kwargs={"scope": "email public_profile"},
     )
 
+apple_client_id = os.getenv("APPLE_CLIENT_ID")
+apple_client_secret = os.getenv("APPLE_CLIENT_SECRET")
+APPLE_OAUTH_ENABLED = bool(apple_client_id and apple_client_secret)
+if apple_client_id and apple_client_secret:
+    oauth.register(
+        name="apple",
+        client_id=apple_client_id,
+        client_secret=apple_client_secret,
+        server_metadata_url="https://appleid.apple.com/.well-known/openid-configuration",
+        client_kwargs={"scope": "name email"},
+    )
+
 
 def ensure_column(cursor, table_name, column_name, definition_sql):
     columns = cursor.execute(f"PRAGMA table_info({table_name})").fetchall()
@@ -204,7 +216,7 @@ def init_db():
             (
                 "Food Tour Phố Cổ Hà Nội",
                 550000,
-                "https://images.unsplash.com/photo-1509030464402-dbad230ecbcd",
+                "https://images.unsplash.com/photo-1563492065599-3520f775eeed?auto=format&fit=crop&w=600&q=80",
                 2,
                 18,
                 2,
@@ -656,6 +668,7 @@ def inject_global_values():
         "current_user": session.get("user"),
         "google_oauth_enabled": GOOGLE_OAUTH_ENABLED,
         "facebook_oauth_enabled": FACEBOOK_OAUTH_ENABLED,
+        "apple_oauth_enabled": APPLE_OAUTH_ENABLED,
         "cart_count": cart_count,
     }
 
@@ -743,6 +756,60 @@ def auth_facebook_callback():
     merge_guest_cart_to_user(user["id"], get_session_cart_key())
     session["user"] = {"id": user["id"], "full_name": user["full_name"], "email": user["email"]}
     flash("Đăng nhập Facebook thành công.", "success")
+    return redirect(url_for('personal'))
+
+
+@app.route('/login/apple')
+def login_apple():
+    if not APPLE_OAUTH_ENABLED:
+        return redirect(url_for('about'))
+    redirect_uri = url_for('auth_apple_callback', _external=True)
+    return oauth.apple.authorize_redirect(redirect_uri)
+
+
+@app.route('/auth/apple/callback', methods=['GET', 'POST'])
+def auth_apple_callback():
+    if not APPLE_OAUTH_ENABLED:
+        return redirect(url_for('about'))
+
+    try:
+        token = oauth.apple.authorize_access_token()
+        user_info = token.get("userinfo")
+        if not user_info:
+            user_info = oauth.apple.parse_id_token(token)
+    except Exception:
+        return render_template(
+            'oauth_error.html',
+            provider='Apple',
+            message='Đăng nhập thất bại hoặc đã bị hủy. Vui lòng thử lại.',
+        )
+
+    if not user_info:
+        return render_template(
+            'oauth_error.html',
+            provider='Apple',
+            message='Không thể lấy thông tin tài khoản Apple.',
+        )
+
+    apple_sub = user_info.get("sub", "")
+    email = user_info.get("email")
+    full_name = "Apple User"
+    if "name" in user_info:
+        name_obj = user_info["name"]
+        if isinstance(name_obj, dict):
+            full_name = f"{name_obj.get('givenName', '')} {name_obj.get('familyName', '')}".strip() or "Apple User"
+        else:
+            full_name = name_obj
+
+    user = get_or_create_oauth_user(
+        provider="apple",
+        oauth_sub=apple_sub,
+        full_name=full_name,
+        email=email,
+    )
+    merge_guest_cart_to_user(user["id"], get_session_cart_key())
+    session["user"] = {"id": user["id"], "full_name": user["full_name"], "email": user["email"]}
+    flash("Đăng nhập Apple ID thành công.", "success")
     return redirect(url_for('personal'))
 
 
@@ -1112,7 +1179,7 @@ def invoice_tour_pdf(booking_code):
         f"Trạng thái: {booking['status']}",
         f"Thời gian tạo: {booking['created_at']}",
     ]
-    pdf_data = build_invoice_pdf("TOUR INVOICE - MINT TRAVEL", lines)
+    pdf_data = build_invoice_pdf("TOUR INVOICE - INNERCOMPASS", lines)
     response = make_response(pdf_data)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=tour_{booking_code}.pdf'
@@ -1162,7 +1229,7 @@ def invoice_food_pdf(order_code):
             f"- {item['food_name']}: {item['quantity']} x {item['unit_price']:,.0f} = {item['line_total']:,.0f} VND"
         )
 
-    pdf_data = build_invoice_pdf("FOOD INVOICE - MINT TRAVEL", lines)
+    pdf_data = build_invoice_pdf("FOOD INVOICE - INNERCOMPASS", lines)
     response = make_response(pdf_data)
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = f'attachment; filename=food_{order_code}.pdf'
@@ -1314,4 +1381,6 @@ if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', '1') == '1'
     host = os.getenv('HOST', '127.0.0.1')
     port = int(os.getenv('PORT', '5000'))
-    app.run(debug=debug_mode, host=host, port=port)
+    # Disabling reloader prevents SystemExit: 3 when running under VS Code debugger / debugpy
+    use_reloader = os.getenv('FLASK_USE_RELOADER', '0') == '1'
+    app.run(debug=debug_mode, host=host, port=port, use_reloader=use_reloader)

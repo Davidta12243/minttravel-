@@ -1,16 +1,103 @@
 {% extends 'base.html' %}
 
-{% block title %}Trang chủ | Mint Travel{% endblock %}
+{% block title %}Trang chủ | Innercompass{% endblock %}
 
 {% block content %}
-<section class="hero-panel">
-    <h2>Trang chủ du lịch kết hợp ăn uống</h2>
-    <p>Giao diện sáng, dễ dùng cho nhiều nhóm khách. Bạn có thể tìm tour, chọn menu ăn uống, đọc blog và đặt chỗ ngay trên cùng một hệ thống.</p>
-    <div class="blog-actions" style="margin-top: 10px;">
-        <a class="btn-primary link-btn" href="{{ url_for('journeys') }}">Xem tour hiện có</a>
-        <a class="btn-secondary link-btn" href="{{ url_for('foods') }}">Xem menu món ăn</a>
+<section class="traveloka-hero">
+    <div class="hero-banner" style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80');">
+        <div class="hero-slogan">
+            <h2>Hơn cả một chuyến đi, đó là trải nghiệm</h2>
+            <p>Khám phá các tour du lịch độc đáo và ẩm thực địa phương cùng Innercompass</p>
+        </div>
+        <div class="hero-phone-wrap">
+            <img src="{{ url_for('static', filename='images/phone_mockup.png') }}" alt="Innercompass App" class="hero-phone-img">
+        </div>
+    </div>
+    
+    <div class="booking-widget">
+        <div class="widget-tabs">
+            <button class="tab-btn active" onclick="switchWidgetTab(this, 'tour')">✈️ Tour Du Lịch</button>
+            <button class="tab-btn" onclick="switchWidgetTab(this, 'food')">🍲 Ẩm Thực</button>
+            <button class="tab-btn" onclick="switchWidgetTab(this, 'blog')">✍️ Góc Cảm Hứng</button>
+        </div>
+        
+        <!-- Tour Panel -->
+        <div id="panel-tour" class="widget-panel active">
+            <form action="{{ url_for('journeys') }}" method="get" class="search-form-layout">
+                <div class="search-field">
+                    <label>📍 Điểm đến</label>
+                    <input type="text" placeholder="Hà Nội, Đà Nẵng, Nha Trang..." name="q" readonly value="Việt Nam">
+                </div>
+                <div class="search-field">
+                    <label>📅 Ngày khởi hành</label>
+                    <input type="date" value="2026-08-01">
+                </div>
+                <div class="search-field">
+                    <label>👥 Số chỗ ngồi</label>
+                    <select>
+                        <option>1 người</option>
+                        <option>2 người</option>
+                        <option>3 người</option>
+                        <option>4+ người</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary search-submit-btn">Tìm kiếm Tour</button>
+            </form>
+        </div>
+
+        <!-- Food Panel -->
+        <div id="panel-food" class="widget-panel">
+            <form action="{{ url_for('foods') }}" method="get" class="search-form-layout">
+                <div class="search-field">
+                    <label>🍲 Loại món ăn</label>
+                    <select name="category">
+                        <option value="Tat ca">Tất cả danh mục</option>
+                        <option value="Món nước">Món nước</option>
+                        <option value="Món nhanh">Món nhanh</option>
+                        <option value="Đồ uống">Đồ uống</option>
+                    </select>
+                </div>
+                <div class="search-field">
+                    <label>🛒 Số lượng</label>
+                    <input type="number" name="item_count" min="1" value="1">
+                </div>
+                <div class="search-field">
+                    <label class="inline-check-widget">
+                        <input type="checkbox" name="with_tour" value="1">
+                        Mua kèm tour
+                    </label>
+                </div>
+                <button type="submit" class="btn-primary search-submit-btn orange-btn">Tìm Món Ăn</button>
+            </form>
+        </div>
+
+        <!-- Blog Panel -->
+        <div id="panel-blog" class="widget-panel">
+            <div class="search-form-layout">
+                <div class="search-field full-width">
+                    <label>✍️ Đọc blog chia sẻ kinh nghiệm du lịch</label>
+                    <p style="font-size: 0.95rem; color: var(--text-700); margin-top: 5px;">
+                        Khám phá cẩm nang bỏ túi từ các blogger du lịch hàng đầu tại Việt Nam.
+                    </p>
+                </div>
+                <a href="{{ url_for('blogs') }}" class="btn-primary search-submit-btn" style="text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center;">Đọc Blogs</a>
+            </div>
+        </div>
     </div>
 </section>
+
+<script>
+function switchWidgetTab(element, type) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.widget-panel').forEach(panel => panel.classList.remove('active'));
+    
+    element.classList.add('active');
+    const panel = document.getElementById('panel-' + type);
+    if (panel) {
+        panel.classList.add('active');
+    }
+}
+</script>
 
 <section class="content-card">
     <h3>Tour nổi bật sắp hết chỗ</h3>
