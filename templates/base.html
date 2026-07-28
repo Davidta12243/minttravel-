@@ -48,7 +48,10 @@
             <a class="auth-action" href="{{ url_for('login_apple') }}">Apple</a>
             {% endif %}
             {% if not google_oauth_enabled and not facebook_oauth_enabled and not apple_oauth_enabled %}
-            <span class="auth-hint">Thêm biến môi trường để bật OAuth</span>
+            <div class="auth-guest-actions" aria-label="Tài khoản khách">
+                <a class="auth-pill auth-pill-login" href="{{ url_for('login_google') }}">Đăng Nhập <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i></a>
+                <a class="auth-pill auth-pill-register" href="{{ url_for('login_google') }}">Đăng ký</a>
+            </div>
             {% endif %}
             {% endif %}
         </div>

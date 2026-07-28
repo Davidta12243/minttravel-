@@ -105,6 +105,9 @@ def init_db():
         """
     )
 
+    ensure_column(cursor, "Foods", "is_active", "INTEGER DEFAULT 1")
+    ensure_column(cursor, "Foods", "sort_order", "INTEGER DEFAULT 0")
+
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS Blogs (
@@ -262,54 +265,208 @@ def init_db():
             """
         )
 
-    cursor.execute("SELECT count(*) FROM Foods")
-    if cursor.fetchone()[0] == 0:
-        foods = [
-            (
-                "Phở bò đặc biệt",
-                "Món nước",
-                65000,
-                "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43",
-                "Nước dùng trong, thịt bò mềm, đầy rau sống.",
-                10,
-                8,
-            ),
-            (
-                "Bánh mì trứng muối",
-                "Món nhanh",
-                35000,
-                "https://images.unsplash.com/photo-1509722747041-616f39b57569",
-                "Vỏ giòn, nhân đậm vị, phù hợp bữa xếp lịch gấp.",
-                12,
-                5,
-            ),
-            (
-                "Bún chả Hà Nội",
-                "Món nước",
-                70000,
-                "https://images.unsplash.com/photo-1559847844-5315695dadae",
-                "Sườn nướng than hoa, nước mắm chấm đậm vị.",
-                8,
-                10,
-            ),
-            (
-                "Cà phê trứng",
-                "Đồ uống",
-                40000,
-                "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
-                "Mùi trứng béo nhẹ, hút giới trẻ check-in.",
-                15,
-                5,
-            ),
-        ]
-        cursor.executemany(
-            """
-            INSERT INTO Foods
-            (name, category, price, image_url, description, combo_percent, tour_bundle_percent)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            foods,
-        )
+    nemta_foods = [
+        (
+            "Nem heo truyền thống",
+            "Spring Rolls",
+            39000,
+            "https://images.unsplash.com/photo-1601050690597-df0568f70950",
+            "Pork, trứng, rau củ, nấm và gia vị truyền thống.",
+            5,
+            3,
+            1,
+        ),
+        (
+            "Nem tôm thịt",
+            "Spring Rolls",
+            49000,
+            "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38",
+            "Tôm tươi kết hợp thịt heo, trứng, rau củ và nấm.",
+            5,
+            3,
+            2,
+        ),
+        (
+            "Nem cua thịt",
+            "Spring Rolls",
+            49000,
+            "https://images.unsplash.com/photo-1467003909585-2f8a72700288",
+            "Cua biển và thịt heo, vị ngọt tự nhiên, đậm đà.",
+            5,
+            3,
+            3,
+        ),
+        (
+            "Nem hải sản",
+            "Spring Rolls",
+            59000,
+            "https://images.unsplash.com/photo-1544025162-d76694265947",
+            "Hải sản tổng hợp, thịt heo, rau củ và gia vị truyền thống.",
+            5,
+            3,
+            4,
+        ),
+        (
+            "Nem chay",
+            "Spring Rolls",
+            39000,
+            "https://images.unsplash.com/photo-1512621776951-a57141f2eefd",
+            "Rau củ tươi, đậu và nấm, phù hợp thực đơn thanh đạm.",
+            5,
+            3,
+            5,
+        ),
+        (
+            "Salad ăn kèm",
+            "Add-on",
+            19000,
+            "https://images.unsplash.com/photo-1512621776951-a57141f2eefd",
+            "Salad tươi ăn kèm nem, cân bằng vị và giảm ngấy.",
+            0,
+            0,
+            6,
+        ),
+        (
+            "Combo Veggie",
+            "Combo Meals",
+            97000,
+            "https://images.unsplash.com/photo-1546069901-ba9599a7e63c",
+            "2 nem chay + 1 salad ăn kèm.",
+            8,
+            3,
+            7,
+        ),
+        (
+            "Combo Pork",
+            "Combo Meals",
+            97000,
+            "https://images.unsplash.com/photo-1512058564366-18510be2db19",
+            "2 nem heo truyền thống + 1 salad.",
+            8,
+            3,
+            8,
+        ),
+        (
+            "Combo Seafood Trio",
+            "Combo Meals",
+            167000,
+            "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f",
+            "Nem tôm thịt + nem cua thịt + nem hải sản + tặng 1 salad.",
+            8,
+            3,
+            9,
+        ),
+        (
+            "Combo Four Seasons",
+            "Combo Meals",
+            206000,
+            "https://images.unsplash.com/photo-1547592180-85f173990554",
+            "4 vị: heo, tôm, cua, hải sản + tặng 2 salad.",
+            10,
+            5,
+            10,
+        ),
+        (
+            "Combo All Five",
+            "Combo Meals",
+            245000,
+            "https://images.unsplash.com/photo-1482049016688-2d3e1b311543",
+            "5 cuốn đủ vị + tặng 2 salad.",
+            10,
+            5,
+            11,
+        ),
+        (
+            "Lavie Mineral Water",
+            "Beverages",
+            9000,
+            "https://images.unsplash.com/photo-1602143407151-7111542de6e8",
+            "Nước khoáng Lavie 500ml.",
+            0,
+            0,
+            12,
+        ),
+        (
+            "Coca Cola",
+            "Beverages",
+            19000,
+            "https://images.unsplash.com/photo-1622483767028-3f66f32aef97",
+            "Coca Cola lon mát lạnh.",
+            0,
+            0,
+            13,
+        ),
+        (
+            "Hanoi Beer",
+            "Beverages",
+            19000,
+            "https://images.unsplash.com/photo-1516478177764-9fe5bd7e9717",
+            "Bia Hà Nội lon.",
+            0,
+            0,
+            14,
+        ),
+        (
+            "Honey Kumquat Tea",
+            "Beverages",
+            19000,
+            "https://images.unsplash.com/photo-1556679343-c7306c1976bc",
+            "Trà tắc mật ong thanh mát.",
+            0,
+            0,
+            15,
+        ),
+        (
+            "Tropical Oolong Tea",
+            "Beverages",
+            19000,
+            "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
+            "Trà ô long nhiệt đới vị dịu nhẹ.",
+            0,
+            0,
+            16,
+        ),
+    ]
+
+    # Keep historical rows for order/cart references but only show synced active menu.
+    cursor.execute("UPDATE Foods SET is_active = 0")
+    for item in nemta_foods:
+        name, category, price, image_url, description, combo_percent, tour_bundle_percent, sort_order = item
+        existing = cursor.execute("SELECT id FROM Foods WHERE name = ?", (name,)).fetchone()
+        if existing:
+            cursor.execute(
+                """
+                UPDATE Foods
+                SET category = ?,
+                    price = ?,
+                    image_url = ?,
+                    description = ?,
+                    combo_percent = ?,
+                    tour_bundle_percent = ?,
+                    sort_order = ?,
+                    is_active = 1
+                WHERE id = ?
+                """,
+                (
+                    category,
+                    price,
+                    image_url,
+                    description,
+                    combo_percent,
+                    tour_bundle_percent,
+                    sort_order,
+                    existing[0],
+                ),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO Foods
+                (name, category, price, image_url, description, combo_percent, tour_bundle_percent, is_active, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                """,
+                (name, category, price, image_url, description, combo_percent, tour_bundle_percent, sort_order),
+            )
 
     cursor.execute("SELECT count(*) FROM Blogs")
     if cursor.fetchone()[0] == 0:
@@ -845,12 +1002,26 @@ def foods():
     except ValueError:
         item_count = 1
 
-    categories = [row["category"] for row in query_all('SELECT DISTINCT category FROM Foods ORDER BY category')]
+    categories = [
+        row["category"]
+        for row in query_all(
+            '''
+            SELECT category
+            FROM Foods
+            WHERE is_active = 1
+            GROUP BY category
+            ORDER BY MIN(sort_order) ASC, category ASC
+            '''
+        )
+    ]
 
     if selected_category == "Tat ca":
-        foods_rows = query_all('SELECT * FROM Foods ORDER BY id DESC')
+        foods_rows = query_all('SELECT * FROM Foods WHERE is_active = 1 ORDER BY sort_order ASC, id ASC')
     else:
-        foods_rows = query_all('SELECT * FROM Foods WHERE category = ? ORDER BY id DESC', (selected_category,))
+        foods_rows = query_all(
+            'SELECT * FROM Foods WHERE is_active = 1 AND category = ? ORDER BY sort_order ASC, id ASC',
+            (selected_category,),
+        )
 
     foods_data = []
     for row in foods_rows:
@@ -906,7 +1077,7 @@ def cart_add():
     except ValueError:
         return redirect(url_for('foods'))
 
-    food = query_one('SELECT id FROM Foods WHERE id = ?', (food_id,))
+    food = query_one('SELECT id FROM Foods WHERE id = ? AND is_active = 1', (food_id,))
     if food is None:
         return redirect(url_for('foods'))
 
