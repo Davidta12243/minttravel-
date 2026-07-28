@@ -1,0 +1,58 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Menu Form | Employee{% endblock %}
+
+{% block content %}
+<section class="panel-card form-card">
+    <h3>{% if menu_item %}Chỉnh sửa món ăn{% else %}Thêm món mới{% endif %}</h3>
+    <form method="post" action="{{ form_action }}" enctype="multipart/form-data" class="stack-form form-grid menu-form-grid">
+        <label>Tên món
+            <input type="text" name="name" value="{{ menu_item['name'] if menu_item else '' }}" required>
+        </label>
+
+        <label>Danh mục
+            <input list="category-suggestions" name="category" value="{{ menu_item['category'] if menu_item else '' }}" placeholder="Ví dụ: Burger, Đồ uống" required>
+            <datalist id="category-suggestions">
+                {% for category in categories %}
+                <option value="{{ category }}"></option>
+                {% endfor %}
+            </datalist>
+        </label>
+
+        <label>Giá bán (VND)
+            <input type="number" name="price" min="0" step="1000" value="{{ menu_item['price'] if menu_item else '' }}" required>
+        </label>
+
+        <label>Trạng thái kinh doanh
+            <select name="is_active">
+                <option value="1" {% if not menu_item or menu_item['is_active'] == 1 %}selected{% endif %}>Còn hàng</option>
+                <option value="0" {% if menu_item and menu_item['is_active'] == 0 %}selected{% endif %}>Hết hàng</option>
+            </select>
+        </label>
+
+        <label>Mô tả thành phần
+            <textarea name="description" rows="6" placeholder="Mô tả nguyên liệu, lưu ý Halal, dị ứng...">{{ menu_item['description'] if menu_item and menu_item['description'] else '' }}</textarea>
+        </label>
+
+        <label>URL ảnh
+            <input type="text" name="image_url" value="{{ menu_item['image_url'] if menu_item and menu_item['image_url'] else '' }}" placeholder="https://... hoặc để trống nếu upload ảnh">
+        </label>
+
+        <label>Upload ảnh mới
+            <input type="file" name="image_file" accept="image/*">
+        </label>
+
+        {% if menu_item and menu_item['image_url'] %}
+        <div class="menu-image-preview-wrap">
+            <p>Ảnh hiện tại</p>
+            <img src="{{ menu_item['image_url'] if menu_item['image_url'].startswith('http') else url_for('static', filename=menu_item['image_url']) }}" alt="{{ menu_item['name'] }}" class="menu-preview-image">
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Lưu</button>
+            <a href="{{ url_for('admin.menus_index') }}" class="btn-secondary">Hủy</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

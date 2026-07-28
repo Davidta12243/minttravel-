@@ -6,7 +6,7 @@
 <section class="admin-hero">
     <div>
         <p class="section-kicker">Tổng quan vận hành</p>
-        <h3>Dashboard quản lý đơn hàng, bài viết và phản hồi</h3>
+        <h3>Dashboard quản lý đơn hàng, menu, bài viết và phản hồi</h3>
         <p>Giao diện này dùng đúng các bảng hiện có trong SQLite và không thay đổi schema gốc.</p>
     </div>
     <div class="hero-note">
@@ -17,6 +17,9 @@
 
 <section class="stats-grid">
     {% set label = 'Đơn hàng' %}{% set value = metrics.orders %}{% set hint = 'Bảng FoodOrders' %}{% include 'components/stats_card.html' %}
+    {% set label = 'Tổng món ăn' %}{% set value = metrics.menu_total %}{% set hint = 'Bảng Foods' %}{% include 'components/stats_card.html' %}
+    {% set label = 'Món còn hàng' %}{% set value = metrics.menu_available %}{% set hint = 'Foods.is_active = 1' %}{% include 'components/stats_card.html' %}
+    {% set label = 'Món hết hàng' %}{% set value = metrics.menu_unavailable %}{% set hint = 'Foods.is_active = 0' %}{% include 'components/stats_card.html' %}
     {% set label = 'Bài viết' %}{% set value = metrics.articles %}{% set hint = 'Bảng Blogs' %}{% include 'components/stats_card.html' %}
     {% set label = 'Phản hồi' %}{% set value = metrics.feedback %}{% set hint = 'Bảng Reviews' %}{% include 'components/stats_card.html' %}
     {% set label = 'Người dùng' %}{% set value = metrics.users %}{% set hint = 'Bảng Users' %}{% include 'components/stats_card.html' %}

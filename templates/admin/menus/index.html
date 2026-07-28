@@ -1,0 +1,113 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Menu Management | Employee{% endblock %}
+
+{% block content %}
+<section class="page-toolbar">
+    <div class="toolbar-copy">
+        <h3>Quản lý menu đồ ăn</h3>
+        <p>Cập nhật trực tiếp bảng Foods để web khách hàng luôn đọc thực đơn mới nhất.</p>
+    </div>
+    <a href="{{ url_for('admin.menu_create') }}" class="btn-primary">Thêm món mới</a>
+</section>
+
+<section class="panel-card">
+    <form method="get" class="filter-form menu-filter-form">
+        <label for="category">Danh mục</label>
+        <select id="category" name="category">
+            <option value="all" {% if category == 'all' %}selected{% endif %}>Tất cả</option>
+            {% for item in categories %}
+            <option value="{{ item }}" {% if category == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="availability">Trạng thái</label>
+        <select id="availability" name="availability">
+            <option value="all" {% if availability == 'all' %}selected{% endif %}>Tất cả</option>
+            <option value="available" {% if availability == 'available' %}selected{% endif %}>Còn hàng</option>
+            <option value="unavailable" {% if availability == 'unavailable' %}selected{% endif %}>Hết hàng</option>
+        </select>
+
+        <label for="keyword">Tìm theo tên món</label>
+        <input id="keyword" type="search" name="keyword" value="{{ keyword }}" placeholder="Ví dụ: Burger, Trà đào...">
+
+        <button type="submit" class="btn-primary">Lọc</button>
+    </form>
+</section>
+
+<section class="panel-card">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Ảnh</th>
+                <th>Tên món</th>
+                <th>Danh mục</th>
+                <th>Giá bán</th>
+                <th>Trạng thái</th>
+                <th>Cập nhật</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for menu_item in menu_items %}
+            <tr>
+                <td>
+                    {% if menu_item['image_url'] %}
+                    <img src="{{ menu_item['image_url'] if menu_item['image_url'].startswith('http') else url_for('static', filename=menu_item['image_url']) }}" alt="{{ menu_item['name'] }}" class="menu-thumb">
+                    {% else %}
+                    <span class="status-pill status-muted">Không ảnh</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <strong>{{ menu_item['name'] }}</strong>
+                    {% if menu_item['description'] %}
+                    <p class="item-desc">{{ menu_item['description'] }}</p>
+                    {% endif %}
+                </td>
+                <td>{{ menu_item['category'] }}</td>
+                <td>{{ '{:,.0f}'.format(menu_item['price']) }} VND</td>
+                <td>
+                    <form method="post" action="{{ url_for('admin.menu_toggle', food_id=menu_item['id'], category=category, availability=availability, keyword=keyword) }}" class="inline-form js-toggle-form">
+                        <input type="hidden" name="is_active" value="{% if menu_item['is_active'] == 1 %}0{% else %}1{% endif %}">
+                        <button type="submit" class="toggle-btn {% if menu_item['is_active'] == 1 %}is-on{% else %}is-off{% endif %}">
+                            {% if menu_item['is_active'] == 1 %}Còn hàng{% else %}Hết hàng{% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>{{ menu_item['updated_at'] or menu_item['created_at'] or '-' }}</td>
+                <td>
+                    <a class="btn-link" href="{{ url_for('admin.menu_edit', food_id=menu_item['id']) }}">Sửa</a>
+                    <form method="post" action="{{ url_for('admin.menu_delete', food_id=menu_item['id'], category=category, availability=availability, keyword=keyword) }}" class="inline-form" data-confirm-message="Xóa món {{ menu_item['name'] }}?">
+                        <button type="submit" class="btn-danger-link">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not menu_items %}
+            <tr><td colspan="7" class="empty-cell">Không có món nào phù hợp bộ lọc.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="pagination-row">
+        <p>
+            Hiển thị trang {{ pagination.page }}/{{ pagination.total_pages }}
+            ({{ pagination.total }} món)
+        </p>
+        <div class="pagination-actions">
+            {% if pagination.page > 1 %}
+            <a
+                class="btn-secondary"
+                href="{{ url_for('admin.menus_index', category=category, availability=availability, keyword=keyword, page=pagination.page - 1) }}"
+            >Trang trước</a>
+            {% endif %}
+            {% if pagination.page < pagination.total_pages %}
+            <a
+                class="btn-secondary"
+                href="{{ url_for('admin.menus_index', category=category, availability=availability, keyword=keyword, page=pagination.page + 1) }}"
+            >Trang sau</a>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -107,6 +107,8 @@ def init_db():
 
     ensure_column(cursor, "Foods", "is_active", "INTEGER DEFAULT 1")
     ensure_column(cursor, "Foods", "sort_order", "INTEGER DEFAULT 0")
+    ensure_column(cursor, "Foods", "created_at", "TEXT")
+    ensure_column(cursor, "Foods", "updated_at", "TEXT")
 
     cursor.execute(
         """
@@ -428,6 +430,8 @@ def init_db():
         ),
     ]
 
+    now_text = datetime.now().strftime("%Y-%m-%d %H:%M")
+
     # Keep historical rows for order/cart references but only show synced active menu.
     cursor.execute("UPDATE Foods SET is_active = 0")
     for item in nemta_foods:
@@ -444,7 +448,8 @@ def init_db():
                     combo_percent = ?,
                     tour_bundle_percent = ?,
                     sort_order = ?,
-                    is_active = 1
+                    is_active = 1,
+                    updated_at = ?
                 WHERE id = ?
                 """,
                 (
@@ -455,6 +460,7 @@ def init_db():
                     combo_percent,
                     tour_bundle_percent,
                     sort_order,
+                    now_text,
                     existing[0],
                 ),
             )
@@ -462,11 +468,14 @@ def init_db():
             cursor.execute(
                 """
                 INSERT INTO Foods
-                (name, category, price, image_url, description, combo_percent, tour_bundle_percent, is_active, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                (name, category, price, image_url, description, combo_percent, tour_bundle_percent, is_active, sort_order, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
                 """,
-                (name, category, price, image_url, description, combo_percent, tour_bundle_percent, sort_order),
+                (name, category, price, image_url, description, combo_percent, tour_bundle_percent, sort_order, now_text, now_text),
             )
+
+    cursor.execute("UPDATE Foods SET created_at = COALESCE(created_at, ?) WHERE created_at IS NULL OR TRIM(created_at) = ''", (now_text,))
+    cursor.execute("UPDATE Foods SET updated_at = COALESCE(updated_at, created_at, ?) WHERE updated_at IS NULL OR TRIM(updated_at) = ''", (now_text,))
 
     cursor.execute("SELECT count(*) FROM Blogs")
     if cursor.fetchone()[0] == 0:
