@@ -1,0 +1,55 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Order Detail | Employee{% endblock %}
+
+{% block content %}
+<section class="panel-card detail-grid">
+    <div>
+        <p class="section-kicker">Chi tiết đơn hàng</p>
+        <h3>{{ order['order_code'] }}</h3>
+        <p><strong>Khách hàng:</strong> {{ order['customer_name'] }}</p>
+        <p><strong>Email:</strong> {{ order['customer_email'] or '-' }}</p>
+        <p><strong>Số điện thoại:</strong> {{ order['customer_phone'] or '-' }}</p>
+        <p><strong>Tổng tiền:</strong> {{ '{:,.0f}'.format(order['total_amount']) }} VND</p>
+        <p><strong>Thời gian:</strong> {{ order['created_at'] }}</p>
+    </div>
+    <form method="post" action="{{ url_for('admin.order_status_update', order_code=order['order_code']) }}" class="stack-form">
+        <label for="status">Cập nhật trạng thái</label>
+        <select id="status" name="status">
+            {% for item in order_statuses %}
+            <option value="{{ item }}" {% if order['status'] == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary">Lưu trạng thái</button>
+    </form>
+</section>
+
+<section class="panel-card">
+    <h4>Danh sách món</h4>
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Món</th>
+                <th>Danh mục</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item['food_name'] }}</td>
+                <td>{{ item['food_category'] }}</td>
+                <td>{{ item['quantity'] }}</td>
+                <td>{{ '{:,.0f}'.format(item['unit_price']) }} VND</td>
+                <td>{{ '{:,.0f}'.format(item['line_total']) }} VND</td>
+            </tr>
+            {% endfor %}
+            {% if not items %}
+            <tr><td colspan="5" class="empty-cell">Không có sản phẩm trong đơn.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

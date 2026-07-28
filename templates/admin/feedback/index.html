@@ -1,0 +1,63 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Feedback | Employee{% endblock %}
+
+{% block content %}
+<section class="page-toolbar">
+    <div class="toolbar-copy">
+        <h3>Quản lý phản hồi & đánh giá</h3>
+        <p>Schema Reviews hiện chưa có cột trạng thái duyệt/ẩn, nên dashboard này hỗ trợ lọc, xem và xóa phản hồi theo bài viết.</p>
+    </div>
+    <form method="get" class="filter-form">
+        <label for="blog_id">Lọc theo bài viết</label>
+        <select id="blog_id" name="blog_id">
+            <option value="all" {% if blog_id == 'all' %}selected{% endif %}>Tất cả bài viết</option>
+            {% for article in articles %}
+            <option value="{{ article['id'] }}" {% if blog_id|string == article['id']|string %}selected{% endif %}>{{ article['title'] }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary">Lọc</button>
+    </form>
+</section>
+
+<section class="panel-card">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Khách</th>
+                <th>Đánh giá</th>
+                <th>Nội dung</th>
+                <th>Bài viết</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for feedback in feedback_items %}
+            <tr>
+                <td>{{ feedback['customer_name'] }}</td>
+                <td>{{ feedback['rating'] }}/5</td>
+                <td>{{ feedback['content'] }}</td>
+                <td>{{ feedback['article_title'] }}</td>
+                <td>
+                    {% if feedback['moderation_status'] == 'hidden' %}
+                    <span class="status-pill status-muted">Đang ẩn</span>
+                    {% else %}
+                    <span class="status-pill">Đã duyệt</span>
+                    {% endif %}
+                    <form method="post" action="{{ url_for('admin.feedback_status', review_id=feedback['id']) }}" class="inline-form">
+                        <input type="hidden" name="status" value="{% if feedback['moderation_status'] == 'hidden' %}approved{% else %}hidden{% endif %}">
+                        <button type="submit" class="btn-danger-link">{% if feedback['moderation_status'] == 'hidden' %}Duyệt lại{% else %}Ẩn{% endif %}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.feedback_delete', review_id=feedback['id']) }}" class="inline-form" data-confirm-message="Xóa phản hồi của {{ feedback['customer_name'] }}?">
+                        <button type="submit" class="btn-danger-link">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not feedback_items %}
+            <tr><td colspan="5" class="empty-cell">Chưa có phản hồi.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

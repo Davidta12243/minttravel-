@@ -34,6 +34,7 @@
         </nav>
         <div class="auth-controls">
             <a class="account-link" href="{{ url_for('personal') }}" data-i18n="nav_orders">Đơn hàng của tôi</a>
+            <a class="auth-action" href="{{ url_for('admin.dashboard') }}">Admin</a>
             {% if current_user %}
             <span class="auth-user">{{ current_user['full_name'] }}</span>
             <a class="auth-action" href="{{ url_for('logout') }}" data-i18n="nav_logout">Đăng xuất</a>

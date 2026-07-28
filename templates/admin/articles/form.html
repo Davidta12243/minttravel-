@@ -1,0 +1,41 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Article Form | Employee{% endblock %}
+
+{% block content %}
+<section class="panel-card form-card">
+    <h3>{% if article %}Chỉnh sửa bài viết{% else %}Tạo bài viết mới{% endif %}</h3>
+    <form method="post" action="{{ form_action }}" enctype="multipart/form-data" class="stack-form form-grid">
+        <label>Tiêu đề
+            <input type="text" name="title" value="{{ article['title'] if article else '' }}" required>
+        </label>
+        <label>Điểm đến
+            <input type="text" name="destination" value="{{ article['destination'] if article else '' }}" required>
+        </label>
+        <label>Tour liên kết
+            <select name="tour_id" required>
+                <option value="">Chọn tour</option>
+                {% for tour in tours %}
+                <option value="{{ tour['id'] }}" {% if article and article['tour_id'] == tour['id'] %}selected{% endif %}>{{ tour['name'] }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>Tóm tắt
+            <textarea name="summary" rows="4" required>{{ article['summary'] if article else '' }}</textarea>
+        </label>
+        <label>Nội dung
+            <textarea name="content" rows="10" required>{{ article['content'] if article else '' }}</textarea>
+        </label>
+        <label>URL ảnh hiện tại
+            <input type="text" name="image_url" value="{{ article['image_url'] if article and article['image_url'] else '' }}" placeholder="Hoặc để trống nếu upload ảnh">
+        </label>
+        <label>Upload ảnh
+            <input type="file" name="image_file" accept="image/*">
+        </label>
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Lưu</button>
+            <a href="{{ url_for('admin.articles_index') }}" class="btn-secondary">Hủy</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

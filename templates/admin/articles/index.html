@@ -1,0 +1,56 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Articles | Employee{% endblock %}
+
+{% block content %}
+<section class="page-toolbar">
+    <div class="toolbar-copy">
+        <h3>Quản lý bài viết</h3>
+        <p>Bảng Blogs hiện không có cột trạng thái publish/hide, nên dashboard hỗ trợ CRUD bài viết theo schema hiện có.</p>
+    </div>
+    <a href="{{ url_for('admin.article_create') }}" class="btn-primary">Tạo bài viết</a>
+</section>
+
+<section class="panel-card">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Tiêu đề</th>
+                <th>Điểm đến</th>
+                <th>Tour</th>
+                <th>Ảnh</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for article in articles %}
+            <tr>
+                <td>{{ article['title'] }}</td>
+                <td>{{ article['destination'] }}</td>
+                <td>{{ article['tour_name'] }}</td>
+                <td>
+                    {% if article['id']|string in hidden_articles %}
+                    <span class="status-pill status-muted">Đang ẩn</span>
+                    {% else %}
+                    <span class="status-pill">Đang hiển thị</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a class="btn-link" href="{{ url_for('admin.article_edit', article_id=article['id']) }}">Sửa</a>
+                    <form method="post" action="{{ url_for('admin.article_visibility', article_id=article['id']) }}" class="inline-form">
+                        <input type="hidden" name="hidden" value="{% if article['id']|string in hidden_articles %}0{% else %}1{% endif %}">
+                        <button type="submit" class="btn-danger-link">{% if article['id']|string in hidden_articles %}Hiện lại{% else %}Ẩn{% endif %}</button>
+                    </form>
+                    <form method="post" action="{{ url_for('admin.article_delete', article_id=article['id']) }}" class="inline-form" data-confirm-message="Xóa bài viết {{ article['title'] }}?">
+                        <button type="submit" class="btn-danger-link">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not articles %}
+            <tr><td colspan="5" class="empty-cell">Chưa có bài viết.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

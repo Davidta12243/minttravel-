@@ -1,0 +1,50 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Orders | Employee{% endblock %}
+
+{% block content %}
+<section class="page-toolbar">
+    <form method="get" class="filter-form">
+        <label for="status">Lọc trạng thái</label>
+        <select id="status" name="status">
+            <option value="all" {% if status == 'all' %}selected{% endif %}>Tất cả</option>
+            {% for item in order_statuses %}
+            <option value="{{ item }}" {% if status == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-primary">Lọc</button>
+    </form>
+</section>
+
+<section class="panel-card">
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>Mã đơn</th>
+                <th>Khách hàng</th>
+                <th>Tổng tiền</th>
+                <th>Số món</th>
+                <th>Trạng thái</th>
+                <th>Thời gian</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order['order_code'] }}</td>
+                <td>{{ order['customer_name'] }}</td>
+                <td>{{ '{:,.0f}'.format(order['total_amount']) }} VND</td>
+                <td>{{ order['item_count'] }}</td>
+                <td><span class="status-pill">{{ order['status'] }}</span></td>
+                <td>{{ order['created_at'] }}</td>
+                <td><a class="btn-link" href="{{ url_for('admin.order_detail', order_code=order['order_code']) }}">Chi tiết</a></td>
+            </tr>
+            {% endfor %}
+            {% if not orders %}
+            <tr><td colspan="7" class="empty-cell">Không có đơn hàng phù hợp.</td></tr>
+            {% endif %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

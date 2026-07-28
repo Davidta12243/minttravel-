@@ -1,0 +1,12 @@
+<header class="admin-topbar">
+    <div>
+        <p class="topbar-eyebrow">Operations center</p>
+        <h2>{% block admin_heading %}Quản trị nội bộ{% endblock %}</h2>
+    </div>
+    <div class="topbar-actions">
+        <span class="topbar-pill">SQLite / Flask</span>
+        <form method="post" action="{{ url_for('admin.admin_logout') }}" class="inline-form">
+            <button type="submit" class="topbar-pill topbar-logout">Đăng xuất</button>
+        </form>
+    </div>
+</header>

@@ -1,0 +1,83 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Dashboard | Employee{% endblock %}
+
+{% block content %}
+<section class="admin-hero">
+    <div>
+        <p class="section-kicker">Tổng quan vận hành</p>
+        <h3>Dashboard quản lý đơn hàng, bài viết và phản hồi</h3>
+        <p>Giao diện này dùng đúng các bảng hiện có trong SQLite và không thay đổi schema gốc.</p>
+    </div>
+    <div class="hero-note">
+        <span>Loading states</span>
+        <strong>Handled in UI</strong>
+    </div>
+</section>
+
+<section class="stats-grid">
+    {% set label = 'Đơn hàng' %}{% set value = metrics.orders %}{% set hint = 'Bảng FoodOrders' %}{% include 'components/stats_card.html' %}
+    {% set label = 'Bài viết' %}{% set value = metrics.articles %}{% set hint = 'Bảng Blogs' %}{% include 'components/stats_card.html' %}
+    {% set label = 'Phản hồi' %}{% set value = metrics.feedback %}{% set hint = 'Bảng Reviews' %}{% include 'components/stats_card.html' %}
+    {% set label = 'Người dùng' %}{% set value = metrics.users %}{% set hint = 'Bảng Users' %}{% include 'components/stats_card.html' %}
+</section>
+
+<section class="admin-panel-grid">
+    <article class="panel-card">
+        <div class="panel-head">
+            <h4>Đơn hàng gần nhất</h4>
+            <a href="{{ url_for('admin.orders_index') }}">Xem tất cả</a>
+        </div>
+        <div class="compact-list">
+            {% for order in recent_orders %}
+            <div class="compact-row">
+                <div>
+                    <strong>{{ order['order_code'] }}</strong>
+                    <p>{{ order['customer_name'] }}</p>
+                </div>
+                <span>{{ order['status'] }}</span>
+            </div>
+            {% endfor %}
+            {% if not recent_orders %}<p class="empty-text">Chưa có đơn hàng.</p>{% endif %}
+        </div>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-head">
+            <h4>Bài viết mới</h4>
+            <a href="{{ url_for('admin.article_create') }}">Tạo bài viết</a>
+        </div>
+        <div class="compact-list">
+            {% for article in recent_articles %}
+            <div class="compact-row">
+                <div>
+                    <strong>{{ article['title'] }}</strong>
+                    <p>{{ article['destination'] }}</p>
+                </div>
+                <span>{{ article['tour_name'] }}</span>
+            </div>
+            {% endfor %}
+            {% if not recent_articles %}<p class="empty-text">Chưa có bài viết.</p>{% endif %}
+        </div>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-head">
+            <h4>Phản hồi khách</h4>
+            <a href="{{ url_for('admin.feedback_index') }}">Mở trang kiểm duyệt</a>
+        </div>
+        <div class="compact-list">
+            {% for feedback in recent_feedback %}
+            <div class="compact-row">
+                <div>
+                    <strong>{{ feedback['customer_name'] }}</strong>
+                    <p>{{ feedback['article_title'] }}</p>
+                </div>
+                <span>{{ feedback['rating'] }}/5</span>
+            </div>
+            {% endfor %}
+            {% if not recent_feedback %}<p class="empty-text">Chưa có phản hồi.</p>{% endif %}
+        </div>
+    </article>
+</section>
+{% endblock %}

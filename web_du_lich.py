@@ -826,6 +826,7 @@ def inject_global_values():
         "google_oauth_enabled": GOOGLE_OAUTH_ENABLED,
         "facebook_oauth_enabled": FACEBOOK_OAUTH_ENABLED,
         "apple_oauth_enabled": APPLE_OAUTH_ENABLED,
+        "admin_authenticated": session.get("admin_authenticated", False),
         "cart_count": cart_count,
     }
 
@@ -1409,6 +1410,8 @@ def invoice_food_pdf(order_code):
 
 @app.route('/blogs')
 def blogs():
+    from admin.moderation import is_article_hidden
+
     blogs_data = query_all(
         '''
         SELECT b.*, t.name AS tour_name
@@ -1417,11 +1420,18 @@ def blogs():
         ORDER BY b.id DESC
         '''
     )
+    blogs_data = [blog for blog in blogs_data if not is_article_hidden(blog['id'])]
     return render_template('blogs.html', blogs=blogs_data)
 
 
 @app.route('/blog/<int:blog_id>')
 def blog_detail(blog_id):
+    from admin.moderation import get_review_status, is_article_hidden
+
+    if is_article_hidden(blog_id):
+        flash('Bài viết này hiện đang tạm ẩn.', 'info')
+        return redirect(url_for('blogs'))
+
     blog = query_one(
         '''
         SELECT b.*, t.name AS tour_name, t.id AS linked_tour_id
@@ -1434,7 +1444,11 @@ def blog_detail(blog_id):
     if blog is None:
         return redirect(url_for("blogs"))
 
-    reviews = query_all('SELECT * FROM Reviews WHERE blog_id = ? ORDER BY id DESC', (blog_id,))
+    reviews = [
+        review
+        for review in query_all('SELECT * FROM Reviews WHERE blog_id = ? ORDER BY id DESC', (blog_id,))
+        if get_review_status(review['id']) != 'hidden'
+    ]
     return render_template('blog_detail.html', blog=blog, reviews=reviews)
 
 
@@ -1546,6 +1560,11 @@ def policy_privacy():
 @app.route('/policy/cancellation')
 def policy_cancellation():
     return render_template('policy.html', policy_type='cancellation')
+
+
+from admin.routes import admin_bp
+
+app.register_blueprint(admin_bp)
 
 if __name__ == '__main__':
     init_db()
