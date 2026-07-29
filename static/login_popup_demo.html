@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Popup Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --text-main: #1e2a35;
+      --text-muted: #67727e;
+      --text-link: #0381e8;
+      --line: #d6dde6;
+      --pill-shadow: 0 6px 14px rgba(18, 31, 53, 0.08);
+      --header-grad-a: #cfefff;
+      --header-grad-b: #b9f7d8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+      background:
+        linear-gradient(0deg, rgba(17, 24, 39, 0.55), rgba(17, 24, 39, 0.55)),
+        url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1400&q=80") center / cover no-repeat;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--text-main);
+    }
+
+    .login-popup {
+      width: min(408px, 100%);
+      border-radius: 20px;
+      background: #ffffff;
+      overflow: hidden;
+      box-shadow: 0 20px 45px rgba(14, 20, 34, 0.3);
+    }
+
+    .popup-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 24px 20px 20px;
+      background: linear-gradient(95deg, var(--header-grad-a), var(--header-grad-b));
+      position: relative;
+    }
+
+    .popup-header::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -24px;
+      height: 48px;
+      background: #fff;
+      border-radius: 100% 100% 0 0 / 100% 100% 0 0;
+    }
+
+    .popup-title {
+      margin: 0;
+      font-size: 39px;
+      line-height: 1.12;
+      font-weight: 800;
+      max-width: 245px;
+      letter-spacing: -0.02em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-art {
+      width: 82px;
+      height: 82px;
+      border-radius: 14px;
+      object-fit: cover;
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.55);
+    }
+
+    .popup-body {
+      padding: 24px 22px 18px;
+      text-align: center;
+    }
+
+    .step {
+      display: none;
+    }
+
+    .step.is-active {
+      display: block;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .action-btn {
+      flex: 1;
+      border: 1px solid #eef2f7;
+      border-radius: 999px;
+      min-height: 42px;
+      background: #fff;
+      box-shadow: var(--pill-shadow);
+      font: inherit;
+      font-weight: 700;
+      font-size: 18px;
+      color: #2b3440;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(18, 31, 53, 0.14);
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .action-btn.full {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+
+    .action-btn .icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 20px;
+      line-height: 1;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .icon.google {
+      background: conic-gradient(from 20deg, #34a853 0 25%, #4285f4 25% 50%, #fbbc05 50% 75%, #ea4335 75% 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .icon.facebook {
+      color: #1877f2;
+      border: 1px solid #dce9ff;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .other-options {
+      border: 0;
+      background: transparent;
+      color: var(--text-link);
+      font-size: 30px;
+      font-weight: 800;
+      margin: 18px 0 20px;
+      cursor: pointer;
+    }
+
+    .note {
+      margin: 0 auto;
+      max-width: 318px;
+      font-size: 18px;
+      line-height: 1.35;
+      color: #66707c;
+      font-weight: 700;
+    }
+
+    .legal {
+      margin: 54px auto 18px;
+      max-width: 340px;
+      font-size: 15px;
+      line-height: 1.35;
+      color: #67727d;
+      font-weight: 700;
+    }
+
+    .legal a {
+      color: var(--text-link);
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .guest-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text-link);
+      font-size: 30px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+
+    .field-group {
+      text-align: left;
+      margin: 10px 0 18px;
+    }
+
+    .field-label {
+      font-size: 19px;
+      font-weight: 700;
+      color: #2a3440;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .field-input {
+      width: 100%;
+      border: 1px solid #b6c0cc;
+      border-radius: 12px;
+      height: 50px;
+      padding: 0 14px;
+      font: inherit;
+      font-size: 18px;
+      color: #2b3440;
+      outline: none;
+    }
+
+    .field-input::placeholder {
+      color: #a6b0bc;
+      font-weight: 600;
+    }
+
+    .continue-btn {
+      width: 100%;
+      border: 0;
+      border-radius: 999px;
+      height: 56px;
+      font: inherit;
+      font-size: 34px;
+      font-weight: 800;
+      color: #8d99a6;
+      background: #e9edf2;
+      cursor: not-allowed;
+      margin: 12px 0 18px;
+    }
+
+    .continue-btn.is-enabled {
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(90deg, #0ea5ea, #0284c7);
+    }
+
+    .back-btn {
+      border: 0;
+      background: transparent;
+      color: var(--text-link);
+      font: inherit;
+      font-size: 35px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 450px) {
+      .popup-title {
+        font-size: 32px;
+      }
+
+      .action-btn {
+        font-size: 16px;
+      }
+
+      .other-options,
+      .guest-btn {
+        font-size: 26px;
+      }
+
+      .continue-btn,
+      .back-btn {
+        font-size: 30px;
+      }
+
+      .note {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-popup" id="login-popup-root" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+    <div class="popup-header">
+      <h2 class="popup-title" id="popup-title">We've got a deal you can't resist!</h2>
+      <img
+        class="header-art"
+        src="https://cdn-icons-png.flaticon.com/512/4140/4140048.png"
+        alt="Offer illustration"
+      />
+    </div>
+
+    <div class="popup-body">
+      <section class="step is-active" id="login-step-social">
+        <button class="action-btn full" id="btn-apple" type="button">
+          <span class="icon" aria-hidden="true">&#63743;</span>
+          <span>Apple</span>
+        </button>
+
+        <div class="button-row">
+          <button class="action-btn" id="btn-google" type="button">
+            <span class="icon google" aria-hidden="true">G</span>
+            <span>Google</span>
+          </button>
+          <button class="action-btn" id="btn-facebook" type="button">
+            <span class="icon facebook" aria-hidden="true">f</span>
+            <span>Facebook</span>
+          </button>
+        </div>
+
+        <button class="other-options" id="btn-other-options" type="button">Other options</button>
+      </section>
+
+      <section class="step" id="login-step-email">
+        <div class="field-group">
+          <label class="field-label" for="input-email-mobile">Email/Mobile Number</label>
+          <input
+            class="field-input"
+            id="input-email-mobile"
+            type="text"
+            placeholder="Example: +61412345678 or yourname@email.com"
+            autocomplete="username"
+          />
+        </div>
+
+        <button class="continue-btn" id="btn-continue" type="button" disabled>Continue</button>
+        <button class="back-btn" id="btn-back" type="button">&#8592; Back</button>
+      </section>
+
+      <p class="note">Lower price and rewards are waiting. Unlock them by logging in!</p>
+
+      <p class="legal">
+        By continuing, you agree to these
+        <a href="#" id="link-terms">Terms &amp; Conditions</a>
+        and acknowledge that you have been informed about our
+        <a href="#" id="link-privacy">Privacy Notice.</a>
+      </p>
+
+      <button class="guest-btn" id="btn-guest" type="button">Browse as a guest</button>
+    </div>
+  </div>
+
+  <script>
+    // Public callback registry: call setLoginPopupCallbacks({...}) from outside.
+    const loginPopupCallbacks = {
+      onAppleClick: () => {},
+      onGoogleClick: () => {},
+      onFacebookClick: () => {},
+      onContinueClick: () => {},
+      onBackClick: () => {},
+      onGuestClick: () => {},
+      onOtherOptionsClick: () => {}
+    };
+
+    function setLoginPopupCallbacks(callbacks) {
+      Object.assign(loginPopupCallbacks, callbacks || {});
+    }
+
+    const socialStep = document.getElementById("login-step-social");
+    const emailStep = document.getElementById("login-step-email");
+    const otherOptionsBtn = document.getElementById("btn-other-options");
+
+    const appleBtn = document.getElementById("btn-apple");
+    const googleBtn = document.getElementById("btn-google");
+    const facebookBtn = document.getElementById("btn-facebook");
+    const continueBtn = document.getElementById("btn-continue");
+    const backBtn = document.getElementById("btn-back");
+    const guestBtn = document.getElementById("btn-guest");
+    const emailInput = document.getElementById("input-email-mobile");
+
+    function showEmailStep() {
+      socialStep.classList.remove("is-active");
+      emailStep.classList.add("is-active");
+      emailInput.focus();
+    }
+
+    function showSocialStep() {
+      emailStep.classList.remove("is-active");
+      socialStep.classList.add("is-active");
+    }
+
+    function updateContinueState() {
+      const hasValue = emailInput.value.trim().length > 0;
+      continueBtn.disabled = !hasValue;
+      continueBtn.classList.toggle("is-enabled", hasValue);
+    }
+
+    appleBtn.addEventListener("click", () => loginPopupCallbacks.onAppleClick());
+    googleBtn.addEventListener("click", () => loginPopupCallbacks.onGoogleClick());
+    facebookBtn.addEventListener("click", () => loginPopupCallbacks.onFacebookClick());
+
+    otherOptionsBtn.addEventListener("click", () => {
+      showEmailStep();
+      loginPopupCallbacks.onOtherOptionsClick();
+    });
+
+    continueBtn.addEventListener("click", () => {
+      if (continueBtn.disabled) {
+        return;
+      }
+      loginPopupCallbacks.onContinueClick(emailInput.value.trim());
+    });
+
+    backBtn.addEventListener("click", () => {
+      showSocialStep();
+      loginPopupCallbacks.onBackClick();
+    });
+
+    guestBtn.addEventListener("click", () => loginPopupCallbacks.onGuestClick());
+    emailInput.addEventListener("input", updateContinueState);
+
+    // Expose setup method globally for easy integration.
+    window.setLoginPopupCallbacks = setLoginPopupCallbacks;
+  </script>
+</body>
+</html>
