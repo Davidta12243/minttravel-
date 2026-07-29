@@ -220,6 +220,9 @@ nav a:hover {
     font-weight: 700;
     line-height: 1;
     text-decoration: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
     transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
@@ -993,6 +996,54 @@ nav a:hover {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
+}
+
+.contact-login-box {
+    width: min(520px, 100%);
+}
+
+.contact-login-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.contact-login-step {
+    display: block;
+}
+
+.otp-helper {
+    color: var(--text-700);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin: 4px 0 8px;
+}
+
+.contact-login-form label {
+    font-weight: 700;
+    color: var(--text-900);
+}
+
+.contact-login-form input {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-login-form input:focus {
+    border-color: var(--mint-600);
+    box-shadow: 0 0 0 3px rgba(1, 148, 243, 0.16);
+    outline: none;
+}
+
+.contact-resend-form {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
 }
 
 /* Booking Layout Detail */

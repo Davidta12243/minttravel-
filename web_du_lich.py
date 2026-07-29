@@ -1,5 +1,6 @@
 from datetime import datetime
 from datetime import timedelta
+import hashlib
 import io
 import os
 from flask import Flask, flash, make_response, redirect, render_template, request, session, url_for
@@ -17,6 +18,10 @@ load_dotenv()
 app = Flask(__name__)
 DB_PATH = "dulich.db"
 LOW_SEAT_THRESHOLD = 5
+CONTACT_OTP_LENGTH = 6
+CONTACT_OTP_TTL_SECONDS = int(os.getenv("CONTACT_OTP_TTL_SECONDS", "300"))
+CONTACT_OTP_MAX_ATTEMPTS = int(os.getenv("CONTACT_OTP_MAX_ATTEMPTS", "5"))
+CONTACT_OTP_DEV_SHOW = os.getenv("CONTACT_OTP_DEV_SHOW", "1") == "1"
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
 
 oauth = OAuth(app)
@@ -31,20 +36,6 @@ if google_client_id and google_client_secret:
         client_secret=google_client_secret,
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
         client_kwargs={"scope": "openid email profile"},
-    )
-
-facebook_client_id = os.getenv("FACEBOOK_CLIENT_ID")
-facebook_client_secret = os.getenv("FACEBOOK_CLIENT_SECRET")
-FACEBOOK_OAUTH_ENABLED = bool(facebook_client_id and facebook_client_secret)
-if facebook_client_id and facebook_client_secret:
-    oauth.register(
-        name="facebook",
-        client_id=facebook_client_id,
-        client_secret=facebook_client_secret,
-        access_token_url="https://graph.facebook.com/v19.0/oauth/access_token",
-        authorize_url="https://www.facebook.com/v19.0/dialog/oauth",
-        api_base_url="https://graph.facebook.com/v19.0/",
-        client_kwargs={"scope": "email public_profile"},
     )
 
 apple_client_id = os.getenv("APPLE_CLIENT_ID")
@@ -153,6 +144,29 @@ def init_db():
 
     ensure_column(cursor, "Users", "oauth_provider", "TEXT")
     ensure_column(cursor, "Users", "oauth_sub", "TEXT")
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS ContactOtps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            contact_type TEXT NOT NULL,
+            contact_value TEXT NOT NULL,
+            otp_hash TEXT NOT NULL,
+            attempts INTEGER NOT NULL DEFAULT 0,
+            consumed INTEGER NOT NULL DEFAULT 0,
+            created_at_ts INTEGER NOT NULL,
+            expires_at_ts INTEGER NOT NULL,
+            verified_at_ts INTEGER
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_contact_otps_lookup
+        ON ContactOtps(contact_type, contact_value, consumed, id)
+        """
+    )
 
     cursor.execute(
         """
@@ -772,6 +786,83 @@ def can_cancel_food_order(created_at, current_status):
     return False, "Đơn đồ ăn quá 2 giờ, không được hoàn"
 
 
+def normalize_contact_login(value):
+    raw_value = (value or "").strip()
+    if not raw_value:
+        return None, None
+
+    if "@" in raw_value:
+        return "email", raw_value.lower()
+
+    digits = "".join(ch for ch in raw_value if ch.isdigit())
+    if not digits:
+        return None, None
+    if raw_value.startswith("+"):
+        return "phone", f"+{digits}"
+    return "phone", digits
+
+
+def mask_contact_value(contact_type, normalized_contact):
+    if contact_type == "email":
+        local, _, domain = normalized_contact.partition("@")
+        if len(local) <= 2:
+            masked_local = local[0] + "*" if local else "**"
+        else:
+            masked_local = local[:2] + "*" * max(2, len(local) - 2)
+        return f"{masked_local}@{domain}"
+
+    visible_tail = normalized_contact[-3:] if len(normalized_contact) >= 3 else normalized_contact
+    return "*" * max(0, len(normalized_contact) - len(visible_tail)) + visible_tail
+
+
+def hash_contact_otp(normalized_contact, otp_code):
+    payload = f"{normalized_contact}|{otp_code}|{app.secret_key}"
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def generate_contact_otp():
+    return "".join(random.choices(string.digits, k=CONTACT_OTP_LENGTH))
+
+
+def get_or_create_contact_user(contact_type, normalized_contact):
+    conn = get_db_connection()
+    if contact_type == "email":
+        user = conn.execute('SELECT * FROM Users WHERE lower(email) = lower(?)', (normalized_contact,)).fetchone()
+        fallback_phone = ''
+        fallback_email = normalized_contact
+        default_name = normalized_contact.split('@')[0]
+    else:
+        user = conn.execute('SELECT * FROM Users WHERE phone = ?', (normalized_contact,)).fetchone()
+        fallback_phone = normalized_contact
+        fallback_email = ''
+        default_name = f"Khách {normalized_contact[-4:]}"
+
+    if user is None:
+        conn.execute(
+            '''
+            INSERT INTO Users (full_name, phone, email, oauth_provider, oauth_sub)
+            VALUES (?, ?, ?, ?, ?)
+            ''',
+            (default_name, fallback_phone, fallback_email, 'contact', normalized_contact),
+        )
+        user = conn.execute('SELECT * FROM Users WHERE id = last_insert_rowid()').fetchone()
+    else:
+        conn.execute(
+            '''
+            UPDATE Users
+            SET phone = COALESCE(NULLIF(TRIM(phone), ''), ?),
+                email = COALESCE(NULLIF(TRIM(email), ''), ?)
+            WHERE id = ?
+            ''',
+            (fallback_phone, fallback_email, user['id']),
+        )
+        user = conn.execute('SELECT * FROM Users WHERE id = ?', (user['id'],)).fetchone()
+
+    conn.commit()
+    conn.close()
+    return user
+
+
 def build_invoice_pdf(title, lines):
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -828,15 +919,23 @@ def inject_global_values():
     )
     cart_count = cart_count_row['total_qty'] if cart_count_row else 0
 
+    pending_contact_login = session.get("contact_login_pending")
+    if pending_contact_login:
+        expires_at_ts = int(pending_contact_login.get("expires_at_ts", 0))
+        if expires_at_ts and int(datetime.now().timestamp()) > expires_at_ts:
+            session.pop("contact_login_pending", None)
+            pending_contact_login = None
+
     return {
         "current_year": datetime.now().year,
         "low_seat_threshold": LOW_SEAT_THRESHOLD,
         "current_user": session.get("user"),
         "google_oauth_enabled": GOOGLE_OAUTH_ENABLED,
-        "facebook_oauth_enabled": FACEBOOK_OAUTH_ENABLED,
         "apple_oauth_enabled": APPLE_OAUTH_ENABLED,
         "admin_authenticated": session.get("admin_authenticated", False),
         "cart_count": cart_count,
+        "contact_login_pending": pending_contact_login,
+        "contact_otp_length": CONTACT_OTP_LENGTH,
     }
 
 
@@ -884,46 +983,134 @@ def auth_google_callback():
     return redirect(url_for('personal'))
 
 
-@app.route('/login/facebook')
-def login_facebook():
-    if not FACEBOOK_OAUTH_ENABLED:
-        return redirect(url_for('about'))
-    configured_redirect_uri = os.getenv('FACEBOOK_REDIRECT_URI', '').strip()
-    redirect_uri = configured_redirect_uri or url_for('auth_facebook_callback', _external=True)
-    return oauth.facebook.authorize_redirect(redirect_uri)
+@app.route('/login/contact', methods=['POST'])
+@app.route('/login/contact/request-otp', methods=['POST'])
+def request_contact_otp():
+    contact_type, normalized_contact = normalize_contact_login(request.form.get('contact'))
+    if not normalized_contact:
+        flash('Vui lòng nhập email hoặc số điện thoại hợp lệ.', 'error')
+        return redirect(request.referrer or url_for('about'))
 
+    now_ts = int(datetime.now().timestamp())
+    expires_at_ts = now_ts + CONTACT_OTP_TTL_SECONDS
+    otp_code = generate_contact_otp()
 
-@app.route('/auth/facebook/callback')
-def auth_facebook_callback():
-    if not FACEBOOK_OAUTH_ENABLED:
-        return redirect(url_for('about'))
-
-    try:
-        oauth.facebook.authorize_access_token()
-        profile = oauth.facebook.get('me?fields=id,name,email').json()
-    except Exception:
-        return render_template(
-            'oauth_error.html',
-            provider='Facebook',
-            message='Đăng nhập thất bại hoặc đã bị hủy. Vui lòng thử lại.',
-        )
-
-    if not profile:
-        return render_template(
-            'oauth_error.html',
-            provider='Facebook',
-            message='Không thể lấy thông tin tài khoản Facebook.',
-        )
-
-    user = get_or_create_oauth_user(
-        provider="facebook",
-        oauth_sub=profile.get("id", ""),
-        full_name=profile.get("name") or "Facebook User",
-        email=profile.get("email"),
+    conn = get_db_connection()
+    conn.execute(
+        '''
+        UPDATE ContactOtps
+        SET consumed = 1
+        WHERE contact_type = ? AND contact_value = ? AND consumed = 0
+        ''',
+        (contact_type, normalized_contact),
     )
-    merge_guest_cart_to_user(user["id"], get_session_cart_key())
-    session["user"] = {"id": user["id"], "full_name": user["full_name"], "email": user["email"]}
-    flash("Đăng nhập Facebook thành công.", "success")
+
+    conn.execute(
+        '''
+        INSERT INTO ContactOtps
+        (contact_type, contact_value, otp_hash, attempts, consumed, created_at_ts, expires_at_ts)
+        VALUES (?, ?, ?, 0, 0, ?, ?)
+        ''',
+        (contact_type, normalized_contact, hash_contact_otp(normalized_contact, otp_code), now_ts, expires_at_ts),
+    )
+
+    conn.commit()
+    conn.close()
+
+    session['contact_login_pending'] = {
+        'contact_type': contact_type,
+        'contact_value': normalized_contact,
+        'masked_contact': mask_contact_value(contact_type, normalized_contact),
+        'expires_at_ts': expires_at_ts,
+    }
+
+    if CONTACT_OTP_DEV_SHOW:
+        flash(f'Mã OTP đã tạo. Mã demo: {otp_code} (hết hạn sau {CONTACT_OTP_TTL_SECONDS // 60} phút).', 'info')
+    else:
+        flash('Mã OTP đã được gửi. Vui lòng kiểm tra email hoặc điện thoại.', 'info')
+
+    return redirect(request.referrer or url_for('about'))
+
+
+@app.route('/login/contact/verify-otp', methods=['POST'])
+def verify_contact_otp():
+    pending = session.get('contact_login_pending')
+    if not pending:
+        flash('Phiên xác thực OTP đã hết hạn, vui lòng thử lại.', 'error')
+        return redirect(request.referrer or url_for('about'))
+
+    otp_code = (request.form.get('otp_code') or '').strip()
+    if not otp_code.isdigit() or len(otp_code) != CONTACT_OTP_LENGTH:
+        flash(f'OTP phải gồm đúng {CONTACT_OTP_LENGTH} chữ số.', 'error')
+        return redirect(request.referrer or url_for('about'))
+
+    contact_type = pending['contact_type']
+    normalized_contact = pending['contact_value']
+    now_ts = int(datetime.now().timestamp())
+
+    conn = get_db_connection()
+    otp_row = conn.execute(
+        '''
+        SELECT * FROM ContactOtps
+        WHERE contact_type = ? AND contact_value = ? AND consumed = 0
+        ORDER BY id DESC
+        LIMIT 1
+        ''',
+        (contact_type, normalized_contact),
+    ).fetchone()
+
+    if otp_row is None:
+        conn.close()
+        session.pop('contact_login_pending', None)
+        flash('Không tìm thấy OTP hợp lệ. Vui lòng yêu cầu mã mới.', 'error')
+        return redirect(request.referrer or url_for('about'))
+
+    if now_ts > int(otp_row['expires_at_ts']):
+        conn.execute('UPDATE ContactOtps SET consumed = 1 WHERE id = ?', (otp_row['id'],))
+        conn.commit()
+        conn.close()
+        session.pop('contact_login_pending', None)
+        flash('OTP đã hết hạn. Vui lòng yêu cầu mã mới.', 'error')
+        return redirect(request.referrer or url_for('about'))
+
+    if int(otp_row['attempts']) >= CONTACT_OTP_MAX_ATTEMPTS:
+        conn.execute('UPDATE ContactOtps SET consumed = 1 WHERE id = ?', (otp_row['id'],))
+        conn.commit()
+        conn.close()
+        session.pop('contact_login_pending', None)
+        flash('OTP đã bị khóa do nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.', 'error')
+        return redirect(request.referrer or url_for('about'))
+
+    if otp_row['otp_hash'] != hash_contact_otp(normalized_contact, otp_code):
+        next_attempts = int(otp_row['attempts']) + 1
+        consumed = 1 if next_attempts >= CONTACT_OTP_MAX_ATTEMPTS else 0
+        conn.execute(
+            'UPDATE ContactOtps SET attempts = ?, consumed = ? WHERE id = ?',
+            (next_attempts, consumed, otp_row['id']),
+        )
+        conn.commit()
+        conn.close()
+        attempts_left = max(0, CONTACT_OTP_MAX_ATTEMPTS - next_attempts)
+        if attempts_left == 0:
+            session.pop('contact_login_pending', None)
+            flash('OTP sai quá số lần cho phép. Vui lòng yêu cầu mã mới.', 'error')
+        else:
+            flash(f'OTP không đúng. Bạn còn {attempts_left} lần thử.', 'error')
+        return redirect(request.referrer or url_for('about'))
+
+    conn.execute(
+        'UPDATE ContactOtps SET consumed = 1, verified_at_ts = ? WHERE id = ?',
+        (now_ts, otp_row['id']),
+    )
+    conn.commit()
+    conn.close()
+
+    user = get_or_create_contact_user(contact_type, normalized_contact)
+
+    merge_guest_cart_to_user(user['id'], get_session_cart_key())
+    session['user'] = {"id": user['id'], "full_name": user['full_name'], "email": user['email']}
+    session.pop('contact_login_pending', None)
+    flash('Xác thực OTP thành công. Bạn đã đăng nhập.', 'success')
     return redirect(url_for('personal'))
 
 
@@ -984,6 +1171,7 @@ def auth_apple_callback():
 @app.route('/logout')
 def logout():
     session.pop("user", None)
+    session.pop("contact_login_pending", None)
     flash("Bạn đã đăng xuất.", "info")
     return redirect(url_for('home'))
 
@@ -1526,7 +1714,7 @@ def personal():
 def book_tour(tour_id):
     user_id = get_active_user_id()
     if not user_id:
-        flash('Vui lòng đăng nhập Google/Facebook trước khi đặt tour.', 'error')
+        flash('Vui lòng đăng nhập trước khi đặt tour.', 'error')
         return redirect(url_for('personal'))
 
     try:

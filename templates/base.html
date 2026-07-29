@@ -42,16 +42,14 @@
             {% if google_oauth_enabled %}
             <a class="auth-action" href="{{ url_for('login_google') }}">Google</a>
             {% endif %}
-            {% if facebook_oauth_enabled %}
-            <a class="auth-action" href="{{ url_for('login_facebook') }}">Facebook</a>
-            {% endif %}
+            <button type="button" class="auth-action" id="openContactLogin">Email/SĐT</button>
             {% if apple_oauth_enabled %}
             <a class="auth-action" href="{{ url_for('login_apple') }}">Apple</a>
             {% endif %}
-            {% if not google_oauth_enabled and not facebook_oauth_enabled and not apple_oauth_enabled %}
+            {% if not google_oauth_enabled and not apple_oauth_enabled %}
             <div class="auth-guest-actions" aria-label="Tài khoản khách">
-                <a class="auth-pill auth-pill-login" href="{{ url_for('login_google') }}">Đăng Nhập <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i></a>
-                <a class="auth-pill auth-pill-register" href="{{ url_for('login_google') }}">Đăng ký</a>
+                <button type="button" class="auth-pill auth-pill-login" id="openContactLoginFallback">Đăng Nhập <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i></button>
+                <button type="button" class="auth-pill auth-pill-register" id="openContactRegisterFallback">Đăng ký</button>
             </div>
             {% endif %}
             {% endif %}
@@ -84,6 +82,57 @@
                 <button type="button" id="confirmCancel" class="btn-secondary">Quay lại</button>
                 <button type="button" id="confirmOk" class="btn-danger">Đồng ý</button>
             </div>
+        </div>
+    </div>
+
+    <div id="contactLoginModal" class="confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="contactLoginTitle" data-has-pending="{{ '1' if contact_login_pending else '0' }}">
+        <div class="confirm-box contact-login-box">
+            <h3 id="contactLoginTitle">Đăng nhập bằng Email/Số điện thoại</h3>
+            <p>Nhập email hoặc số điện thoại để nhận mã OTP đăng nhập.</p>
+
+            <section id="contactStepRequest" class="contact-login-step{% if contact_login_pending %} hidden{% endif %}">
+                <form method="post" action="{{ url_for('request_contact_otp') }}" class="contact-login-form">
+                    <label for="contactLoginInput">Email hoặc số điện thoại</label>
+                    <input
+                        id="contactLoginInput"
+                        name="contact"
+                        type="text"
+                        autocomplete="username"
+                        placeholder="vd: yourname@email.com hoặc 0901234567"
+                        required
+                    >
+                    <div class="confirm-actions">
+                        <button type="button" id="contactLoginCancel" class="btn-secondary">Hủy</button>
+                        <button type="submit" class="btn-primary">Gửi mã OTP</button>
+                    </div>
+                </form>
+            </section>
+
+            <section id="contactStepVerify" class="contact-login-step{% if not contact_login_pending %} hidden{% endif %}">
+                <p class="otp-helper">Nhập OTP đã gửi tới {{ contact_login_pending.masked_contact if contact_login_pending else 'liên hệ của bạn' }}.</p>
+                <form method="post" action="{{ url_for('verify_contact_otp') }}" class="contact-login-form">
+                    <label for="contactOtpInput">Mã OTP</label>
+                    <input
+                        id="contactOtpInput"
+                        name="otp_code"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        maxlength="{{ contact_otp_length }}"
+                        placeholder="Nhập {{ contact_otp_length }} chữ số"
+                        required
+                    >
+                    <div class="confirm-actions">
+                        <button type="submit" class="btn-primary">Xác thực OTP</button>
+                    </div>
+                </form>
+                <form method="post" action="{{ url_for('request_contact_otp') }}" class="contact-resend-form">
+                    <input type="hidden" name="contact" value="{{ contact_login_pending.contact_value if contact_login_pending else '' }}">
+                    <button type="submit" class="btn-secondary compact">Gửi lại mã</button>
+                    <button type="button" id="contactLoginBack" class="btn-secondary compact">Đổi email/số điện thoại</button>
+                    <button type="button" id="contactLoginCancelOtp" class="btn-secondary compact">Hủy</button>
+                </form>
+            </section>
         </div>
     </div>
 
@@ -285,6 +334,80 @@
                     modal.classList.add('hidden');
                 }
             });
+        })();
+    </script>
+
+    <script>
+        (() => {
+            const contactModal = document.getElementById('contactLoginModal');
+            const contactInput = document.getElementById('contactLoginInput');
+            const closeBtn = document.getElementById('contactLoginCancel');
+            const closeOtpBtn = document.getElementById('contactLoginCancelOtp');
+            const backBtn = document.getElementById('contactLoginBack');
+            const contactStepRequest = document.getElementById('contactStepRequest');
+            const contactStepVerify = document.getElementById('contactStepVerify');
+            const otpInput = document.getElementById('contactOtpInput');
+            const hasPendingOtp = contactModal.dataset.hasPending === '1';
+            const openButtons = [
+                document.getElementById('openContactLogin'),
+                document.getElementById('openContactLoginFallback'),
+                document.getElementById('openContactRegisterFallback')
+            ].filter(Boolean);
+
+            function showRequestStep() {
+                contactStepVerify.classList.add('hidden');
+                contactStepRequest.classList.remove('hidden');
+                if (contactInput) {
+                    contactInput.focus();
+                }
+            }
+
+            function showVerifyStep() {
+                contactStepRequest.classList.add('hidden');
+                contactStepVerify.classList.remove('hidden');
+                if (otpInput) {
+                    otpInput.focus();
+                }
+            }
+
+            function openContactModal() {
+                contactModal.classList.remove('hidden');
+                if (hasPendingOtp) {
+                    showVerifyStep();
+                    return;
+                }
+                showRequestStep();
+            }
+
+            function closeContactModal() {
+                contactModal.classList.add('hidden');
+            }
+
+            openButtons.forEach((button) => {
+                button.addEventListener('click', openContactModal);
+            });
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeContactModal);
+            }
+
+            if (closeOtpBtn) {
+                closeOtpBtn.addEventListener('click', closeContactModal);
+            }
+
+            if (backBtn) {
+                backBtn.addEventListener('click', showRequestStep);
+            }
+
+            contactModal.addEventListener('click', (event) => {
+                if (event.target === contactModal) {
+                    closeContactModal();
+                }
+            });
+
+            if (hasPendingOtp) {
+                openContactModal();
+            }
         })();
     </script>
 
