@@ -18,3 +18,5 @@ services:
         sync: false
       - key: FACEBOOK_CLIENT_SECRET
         sync: false
+      - key: FACEBOOK_REDIRECT_URI
+        value: https://innercompass-i3i7.onrender.com/auth/facebook/callback

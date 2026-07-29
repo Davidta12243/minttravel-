@@ -888,7 +888,8 @@ def auth_google_callback():
 def login_facebook():
     if not FACEBOOK_OAUTH_ENABLED:
         return redirect(url_for('about'))
-    redirect_uri = url_for('auth_facebook_callback', _external=True)
+    configured_redirect_uri = os.getenv('FACEBOOK_REDIRECT_URI', '').strip()
+    redirect_uri = configured_redirect_uri or url_for('auth_facebook_callback', _external=True)
     return oauth.facebook.authorize_redirect(redirect_uri)
 
 
@@ -1308,7 +1309,8 @@ def cancel_food_order(order_code):
         '''
         SELECT *
         FROM FoodOrders
-        WHERE order_code = ? AND user_id = ?
+        WHERE 
+        order_code = ? AND user_id = ?
         ''',
         (order_code, user_id),
     ).fetchone()

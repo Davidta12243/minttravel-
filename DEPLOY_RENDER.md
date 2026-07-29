@@ -22,9 +22,9 @@ Neu dung OAuth:
 - `FACEBOOK_CLIENT_SECRET`
 
 ## 4) OAuth callback URL
-Sau khi app co URL Render (vi du `https://mint-travel-app.onrender.com`), set callback:
-- Google: `https://mint-travel-app.onrender.com/auth/google/callback`
-- Facebook: `https://mint-travel-app.onrender.com/auth/facebook/callback`
+Sau khi app co URL Render, set callback:
+- Google: `https://innercompass-i3i7.onrender.com/auth/google/callback`
+- Facebook: `https://innercompass-i3i7.onrender.com/auth/facebook/callback`
 
 ## 5) Gan ten mien
 1. Mua domain (Cloudflare/Namecheap/...)
