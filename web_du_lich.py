@@ -1384,6 +1384,11 @@ def foods():
     foods_data = []
     for row in foods_rows:
         item = dict(row)
+        url = item.get("image_url") or ""
+        if "images.unsplash.com" in url and "w=" not in url:
+            sep = "&" if "?" in url else "?"
+            url = f"{url}{sep}w=500&q=80&fit=crop&auto=format"
+        item["image_url"] = url
         item["discounted_price"] = apply_food_discounts(
             row["price"],
             row["combo_percent"],

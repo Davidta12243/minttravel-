@@ -36,7 +36,7 @@
             <a class="account-link" href="{{ url_for('personal') }}" data-i18n="nav_orders">Đơn hàng của tôi</a>
             <a class="auth-action" href="{{ url_for('admin.dashboard') }}">Admin</a>
             {% if current_user %}
-            <span class="auth-user">{{ current_user['full_name'] }}</span>
+            <a href="{{ url_for('personal') }}" style="text-decoration: none;"><span class="auth-user" style="cursor: pointer;"><i class="fa-solid fa-user" style="margin-right: 5px;"></i>{{ current_user['full_name'] }}</span></a>
             <a class="auth-action" href="{{ url_for('logout') }}" data-i18n="nav_logout">Đăng xuất</a>
             {% else %}
             {% if google_oauth_enabled %}

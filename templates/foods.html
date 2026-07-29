@@ -40,7 +40,7 @@
 <section class="food-list">
     {% for item in foods %}
     <article class="food-item">
-        <img src="{{ item['image_url'] }}" alt="{{ item['name'] }}" class="food-image">
+        <img src="{{ item['image_url'] }}" alt="{{ item['name'] }}" class="food-image" loading="lazy" decoding="async">
         <div class="food-body">
             <div class="food-top">
                 <h3>{{ item['name'] }}</h3>
