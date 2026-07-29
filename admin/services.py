@@ -170,18 +170,33 @@ def delete_article(article_id: int):
     conn.close()
 
 
-def list_feedback(blog_id: str = "all"):
+def list_feedback(blog_id: str = "all", target_type: str = "all"):
     _, query_all, _ = _helpers()
     params = []
     sql = """
-        SELECT r.*, b.title AS article_title, b.destination AS article_destination
+        SELECT r.*, 
+               b.title AS article_title,
+               t.name AS tour_title,
+               f.name AS food_title
         FROM Reviews r
-        JOIN Blogs b ON r.blog_id = b.id
+        LEFT JOIN Blogs b ON r.blog_id = b.id
+        LEFT JOIN Tours t ON r.tour_id = t.id
+        LEFT JOIN Foods f ON r.food_id = f.id
         WHERE 1 = 1
     """
-    if blog_id != "all":
+    if target_type == "blog":
+        sql += " AND r.blog_id IS NOT NULL"
+        if blog_id != "all":
+            sql += " AND r.blog_id = ?"
+            params.append(blog_id)
+    elif target_type == "tour":
+        sql += " AND r.tour_id IS NOT NULL"
+    elif target_type == "food":
+        sql += " AND r.food_id IS NOT NULL"
+    elif blog_id != "all":
         sql += " AND r.blog_id = ?"
         params.append(blog_id)
+        
     sql += " ORDER BY r.id DESC"
     return query_all(sql, tuple(params))
 

@@ -24,5 +24,31 @@
         </article>
         {% endfor %}
     </div>
+
+    <!-- Review Form -->
+    <div style="border-top: 1px solid rgba(0, 0, 0, 0.08); padding-top: 20px; margin-top: 20px;">
+        <h4 style="margin-bottom: 15px; font-size: 1.05rem; color: var(--text-900);">Viết nhận xét của bạn:</h4>
+        {% if current_user %}
+        <form action="{{ url_for('add_review') }}" method="post" style="display: grid; gap: 12px;">
+            <input type="hidden" name="blog_id" value="{{ blog['id'] }}">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="rating-blog" style="font-size: 0.95rem; font-weight: 600;">Số sao đánh giá:</label>
+                <select id="rating-blog" name="rating" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit; font-size: 0.95rem;">
+                    <option value="5">5 ★ (Rất tốt)</option>
+                    <option value="4">4 ★ (Tốt)</option>
+                    <option value="3">3 ★ (Bình thường)</option>
+                    <option value="2">2 ★ (Kém)</option>
+                    <option value="1">1 ★ (Rất kém)</option>
+                </select>
+            </div>
+            <textarea name="content" placeholder="Chia sẻ cảm nhận của bạn về bài viết này..." rows="3" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 0.95rem;" required></textarea>
+            <button type="submit" class="btn-primary" style="width: fit-content; justify-self: end;">Gửi đánh giá</button>
+        </form>
+        {% else %}
+        <p style="font-size: 0.9rem; color: #777; margin: 0; text-align: center;">
+            Vui lòng <button type="button" style="background: none; border: none; color: var(--mint-600); text-decoration: underline; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; font-weight: 600;" onclick="document.getElementById('openContactLogin').click()">đăng nhập</button> để viết nhận xét.
+        </p>
+        {% endif %}
+    </div>
 </section>
 {% endblock %}

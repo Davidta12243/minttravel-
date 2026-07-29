@@ -196,12 +196,19 @@ def article_visibility(article_id):
 @admin_bp.route("/feedback")
 def feedback_index():
     blog_id = request.args.get("blog_id", "all")
-    feedback_items = [dict(item) for item in list_feedback(blog_id=blog_id)]
+    target_type = request.args.get("target_type", "all")
+    feedback_items = [dict(item) for item in list_feedback(blog_id=blog_id, target_type=target_type)]
     articles = list_articles()
     review_states = load_state()["review_states"]
     for item in feedback_items:
         item["moderation_status"] = review_states.get(str(item["id"]), "approved")
-    return render_template("admin/feedback/index.html", feedback_items=feedback_items, articles=articles, blog_id=blog_id)
+    return render_template(
+        "admin/feedback/index.html",
+        feedback_items=feedback_items,
+        articles=articles,
+        blog_id=blog_id,
+        target_type=target_type,
+    )
 
 
 @admin_bp.route("/feedback/<int:review_id>/delete", methods=["POST"])

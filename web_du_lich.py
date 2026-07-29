@@ -137,18 +137,48 @@ def init_db():
         """
     )
 
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS Reviews (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            blog_id INTEGER NOT NULL,
-            customer_name TEXT NOT NULL,
-            rating INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            FOREIGN KEY (blog_id) REFERENCES Blogs (id)
+    # Safe migration for Reviews table to support nullable blog_id, tour_id and food_id
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Reviews'")
+    reviews_table_exists = cursor.fetchone() is not None
+    if reviews_table_exists:
+        columns = cursor.execute("PRAGMA table_info(Reviews)").fetchall()
+        column_names = [col[1] for col in columns]
+        if "tour_id" not in column_names or "food_id" not in column_names:
+            cursor.execute("ALTER TABLE Reviews RENAME TO Reviews_old")
+            cursor.execute(
+                """
+                CREATE TABLE Reviews (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    blog_id INTEGER,
+                    tour_id INTEGER,
+                    food_id INTEGER,
+                    customer_name TEXT NOT NULL,
+                    rating INTEGER NOT NULL,
+                    content TEXT NOT NULL
+                )
+                """
+            )
+            cursor.execute(
+                """
+                INSERT INTO Reviews (id, blog_id, customer_name, rating, content)
+                SELECT id, blog_id, customer_name, rating, content FROM Reviews_old
+                """
+            )
+            cursor.execute("DROP TABLE Reviews_old")
+    else:
+        cursor.execute(
+            """
+            CREATE TABLE Reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                blog_id INTEGER,
+                tour_id INTEGER,
+                food_id INTEGER,
+                customer_name TEXT NOT NULL,
+                rating INTEGER NOT NULL,
+                content TEXT NOT NULL
+            )
+            """
         )
-        """
-    )
 
     cursor.execute(
         """
@@ -1347,7 +1377,18 @@ def about():
 
 @app.route('/journeys')
 def journeys():
-    tours = query_all('SELECT * FROM Tours ORDER BY id DESC')
+    from admin.moderation import get_review_status
+    tours_rows = query_all('SELECT * FROM Tours ORDER BY id DESC')
+    tours = []
+    for row in tours_rows:
+        tour = dict(row)
+        reviews = [
+            review
+            for review in query_all('SELECT * FROM Reviews WHERE tour_id = ? ORDER BY id DESC', (tour['id'],))
+            if get_review_status(review['id']) != 'hidden'
+        ]
+        tour['reviews'] = reviews
+        tours.append(tour)
     return render_template('journeys.html', tours=tours)
 
 
@@ -1396,6 +1437,13 @@ def foods():
             item_count,
             with_tour,
         )
+        from admin.moderation import get_review_status
+        reviews = [
+            review
+            for review in query_all('SELECT * FROM Reviews WHERE food_id = ? ORDER BY id DESC', (item['id'],))
+            if get_review_status(review['id']) != 'hidden'
+        ]
+        item['reviews'] = reviews
         foods_data.append(item)
 
     user_id = get_active_user_id()
@@ -1813,6 +1861,51 @@ def blog_detail(blog_id):
         if get_review_status(review['id']) != 'hidden'
     ]
     return render_template('blog_detail.html', blog=blog, reviews=reviews)
+
+
+@app.route('/review/add', methods=['POST'])
+def add_review():
+    session_user = session.get("user")
+    if not session_user:
+        flash("Bạn cần đăng nhập để gửi đánh giá.", "error")
+        return redirect(request.referrer or url_for('home'))
+
+    blog_id = request.form.get("blog_id")
+    tour_id = request.form.get("tour_id")
+    food_id = request.form.get("food_id")
+    rating_raw = request.form.get("rating", "5")
+    content = request.form.get("content", "").strip()
+
+    try:
+        rating = max(1, min(5, int(rating_raw)))
+    except ValueError:
+        rating = 5
+
+    if not content:
+        flash("Nội dung đánh giá không được để trống.", "error")
+        return redirect(request.referrer or url_for('home'))
+
+    b_id = int(blog_id) if blog_id and blog_id.strip() else None
+    t_id = int(tour_id) if tour_id and tour_id.strip() else None
+    f_id = int(food_id) if food_id and food_id.strip() else None
+
+    if not any([b_id, t_id, f_id]):
+        flash("Đánh giá phải thuộc về một Tour, Món ăn hoặc Blog.", "error")
+        return redirect(request.referrer or url_for('home'))
+
+    conn = get_db_connection()
+    conn.execute(
+        """
+        INSERT INTO Reviews (blog_id, tour_id, food_id, customer_name, rating, content)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (b_id, t_id, f_id, session_user["full_name"], rating, content),
+    )
+    conn.commit()
+    conn.close()
+
+    flash("Đăng đánh giá thành công!", "success")
+    return redirect(request.referrer or url_for('home'))
 
 
 @app.route('/personal')

@@ -26,9 +26,66 @@
                 <input type="number" name="seats" value="1" min="1" class="seat-input">
                 <button type="submit" class="btn-primary">Đặt chỗ ngay</button>
             </form>
-            <button type="button" class="btn-secondary">Nhận tư vấn</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px;">
+                <button type="button" class="btn-secondary">Nhận tư vấn</button>
+                <button type="button" class="btn-secondary" onclick="toggleReviews('tour-{{ tour['id'] }}')">
+                    <i class="fa-solid fa-comments"></i> Review ({{ tour['reviews']|length }})
+                </button>
+            </div>
+
+            <!-- Review Section -->
+            <div id="tour-{{ tour['id'] }}-reviews" class="reviews-container hidden" style="border-top: 1px solid rgba(0, 0, 0, 0.08); padding-top: 15px; margin-top: 15px; text-align: left;">
+                <h4 style="margin-bottom: 10px; font-size: 1rem; color: var(--text-900);">Đánh giá của khách hàng:</h4>
+                
+                <div class="reviews-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+                    {% if tour['reviews'] %}
+                        {% for review in tour['reviews'] %}
+                        <div class="review-item" style="margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed rgba(0, 0, 0, 0.08); font-size: 0.9rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                <strong>{{ review['customer_name'] }}</strong>
+                                <span style="color: #f59e0b;">{{ '★' * review['rating'] }}{{ '☆' * (5 - review['rating']) }}</span>
+                            </div>
+                            <p style="margin: 0; color: #555; line-height: 1.4;">{{ review['content'] }}</p>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="font-size: 0.9rem; color: #777; font-style: italic; margin: 10px 0;">Chưa có đánh giá nào cho tour này.</p>
+                    {% endif %}
+                </div>
+
+                {% if current_user %}
+                <form action="{{ url_for('add_review') }}" method="post" style="display: grid; gap: 8px;">
+                    <input type="hidden" name="tour_id" value="{{ tour['id'] }}">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="rating-tour-{{ tour['id'] }}" style="font-size: 0.9rem; font-weight: 600;">Số sao:</label>
+                        <select id="rating-tour-{{ tour['id'] }}" name="rating" style="padding: 4px; border-radius: 4px; border: 1px solid #ccc; font-family: inherit;">
+                            <option value="5">5 ★ (Rất tốt)</option>
+                            <option value="4">4 ★ (Tốt)</option>
+                            <option value="3">3 ★ (Bình thường)</option>
+                            <option value="2">2 ★ (Kém)</option>
+                            <option value="1">1 ★ (Rất kém)</option>
+                        </select>
+                    </div>
+                    <textarea name="content" placeholder="Nhập nhận xét của bạn về tour này..." rows="2" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-family: inherit; font-size: 0.9rem;" required></textarea>
+                    <button type="submit" class="btn-primary compact" style="width: fit-content; justify-self: end;">Gửi đánh giá</button>
+                </form>
+                {% else %}
+                <p style="font-size: 0.85rem; color: #777; margin: 10px 0 0; text-align: center;">
+                    Vui lòng <button type="button" style="background: none; border: none; color: var(--mint-600); text-decoration: underline; cursor: pointer; padding: 0; font-family: inherit; font-size: inherit; font-weight: 600;" onclick="document.getElementById('openContactLogin').click()">đăng nhập</button> để viết đánh giá.
+                </p>
+                {% endif %}
+            </div>
         </div>
     </article>
     {% endfor %}
 </section>
+
+<script>
+function toggleReviews(id) {
+    const container = document.getElementById(id + '-reviews');
+    if (container) {
+        container.classList.toggle('hidden');
+    }
+}
+</script>
 {% endblock %}
