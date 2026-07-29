@@ -42,11 +42,14 @@
             {% if google_oauth_enabled %}
             <a class="auth-action" href="{{ url_for('login_google') }}">Google</a>
             {% endif %}
+            {% if facebook_oauth_enabled %}
+            <a class="auth-action" href="{{ url_for('login_facebook') }}">Facebook</a>
+            {% endif %}
             <button type="button" class="auth-action" id="openContactLogin">Email/SĐT</button>
             {% if apple_oauth_enabled %}
             <a class="auth-action" href="{{ url_for('login_apple') }}">Apple</a>
             {% endif %}
-            {% if not google_oauth_enabled and not apple_oauth_enabled %}
+            {% if not google_oauth_enabled and not apple_oauth_enabled and not facebook_oauth_enabled %}
             <div class="auth-guest-actions" aria-label="Tài khoản khách">
                 <button type="button" class="auth-pill auth-pill-login" id="openContactLoginFallback">Đăng Nhập <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i></button>
                 <button type="button" class="auth-pill auth-pill-register" id="openContactRegisterFallback">Đăng ký</button>

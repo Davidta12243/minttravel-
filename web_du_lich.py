@@ -15,6 +15,12 @@ from reportlab.pdfgen import canvas
 
 load_dotenv()
 
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
+import requests
+
+
 app = Flask(__name__)
 DB_PATH = "dulich.db"
 LOW_SEAT_THRESHOLD = 5
@@ -49,6 +55,21 @@ if apple_client_id and apple_client_secret:
         server_metadata_url="https://appleid.apple.com/.well-known/openid-configuration",
         client_kwargs={"scope": "name email"},
     )
+
+facebook_client_id = os.getenv("FACEBOOK_CLIENT_ID")
+facebook_client_secret = os.getenv("FACEBOOK_CLIENT_SECRET")
+FACEBOOK_OAUTH_ENABLED = bool(facebook_client_id and facebook_client_secret)
+if facebook_client_id and facebook_client_secret:
+    oauth.register(
+        name="facebook",
+        client_id=facebook_client_id,
+        client_secret=facebook_client_secret,
+        access_token_url="https://graph.facebook.com/oauth/access_token",
+        authorize_url="https://www.facebook.com/dialog/oauth",
+        api_base_url="https://graph.facebook.com/",
+        client_kwargs={"scope": "email public_profile"},
+    )
+
 
 
 def ensure_column(cursor, table_name, column_name, definition_sql):
@@ -824,6 +845,75 @@ def generate_contact_otp():
     return "".join(random.choices(string.digits, k=CONTACT_OTP_LENGTH))
 
 
+def send_email_otp(email, otp_code):
+    smtp_server = os.getenv("SMTP_SERVER")
+    smtp_port = os.getenv("SMTP_PORT")
+    smtp_username = os.getenv("SMTP_USERNAME")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+    smtp_sender = os.getenv("SMTP_SENDER")
+
+    if not all([smtp_server, smtp_port, smtp_username, smtp_password, smtp_sender]):
+        return False, "SMTP configuration variables are missing in .env"
+
+    try:
+        subject = "[Innercompass] Mã xác thực OTP đăng nhập"
+        body = f"Chào bạn,\n\nMã xác thực OTP của bạn là: {otp_code}\nMã này có hiệu lực trong vòng {CONTACT_OTP_TTL_SECONDS // 60} phút.\n\nNếu bạn không yêu cầu mã này, vui lòng bỏ qua email này.\n\nTrân trọng,\nInnercompass Team"
+        
+        msg = MIMEText(body, 'plain', 'utf-8')
+        msg['Subject'] = Header(subject, 'utf-8')
+        msg['From'] = smtp_sender
+        msg['To'] = email
+
+        port = int(smtp_port)
+        if port == 465:
+            server = smtplib.SMTP_SSL(smtp_server, port)
+        else:
+            server = smtplib.SMTP(smtp_server, port)
+            server.starttls()
+        
+        server.login(smtp_username, smtp_password)
+        server.sendmail(smtp_sender, [email], msg.as_string())
+        server.quit()
+        return True, None
+    except Exception as e:
+        print(f"Failed to send email OTP to {email}: {e}")
+        return False, str(e)
+
+
+def send_sms_otp(phone_number, otp_code):
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    twilio_number = os.getenv("TWILIO_PHONE_NUMBER")
+
+    if not all([account_sid, auth_token, twilio_number]):
+        return False, "Twilio configuration variables are missing in .env"
+
+    try:
+        formatted_phone = phone_number.strip()
+        if formatted_phone.startswith("0"):
+            formatted_phone = "+84" + formatted_phone[1:]
+        elif not formatted_phone.startswith("+"):
+            formatted_phone = "+" + formatted_phone
+
+        url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+        data = {
+            "To": formatted_phone,
+            "From": twilio_number,
+            "Body": f"[Innercompass] Ma OTP dang nhap cua ban la: {otp_code}. Hieu luc {CONTACT_OTP_TTL_SECONDS // 60} phut."
+        }
+        
+        response = requests.post(url, data=data, auth=(account_sid, auth_token))
+        if response.status_code in [200, 201]:
+            return True, None
+        else:
+            print(f"Twilio error response: {response.text}")
+            return False, f"Twilio API Error {response.status_code}: {response.text}"
+    except Exception as e:
+        print(f"Failed to send SMS OTP to {phone_number}: {e}")
+        return False, str(e)
+
+
+
 def get_or_create_contact_user(contact_type, normalized_contact):
     conn = get_db_connection()
     if contact_type == "email":
@@ -932,6 +1022,7 @@ def inject_global_values():
         "current_user": session.get("user"),
         "google_oauth_enabled": GOOGLE_OAUTH_ENABLED,
         "apple_oauth_enabled": APPLE_OAUTH_ENABLED,
+        "facebook_oauth_enabled": FACEBOOK_OAUTH_ENABLED,
         "admin_authenticated": session.get("admin_authenticated", False),
         "cart_count": cart_count,
         "contact_login_pending": pending_contact_login,
@@ -1024,10 +1115,30 @@ def request_contact_otp():
         'expires_at_ts': expires_at_ts,
     }
 
+    sent_real = False
+    error_msg = None
+    if contact_type == 'email':
+        success, err = send_email_otp(normalized_contact, otp_code)
+        if success:
+            sent_real = True
+        else:
+            error_msg = err
+    elif contact_type == 'phone':
+        success, err = send_sms_otp(normalized_contact, otp_code)
+        if success:
+            sent_real = True
+        else:
+            error_msg = err
+
     if CONTACT_OTP_DEV_SHOW:
         flash(f'Mã OTP đã tạo. Mã demo: {otp_code} (hết hạn sau {CONTACT_OTP_TTL_SECONDS // 60} phút).', 'info')
+        if not sent_real and error_msg:
+            flash(f'Không thể gửi OTP thực tế qua {contact_type} (đang dùng chế độ demo): {error_msg}', 'warning')
     else:
-        flash('Mã OTP đã được gửi. Vui lòng kiểm tra email hoặc điện thoại.', 'info')
+        if sent_real:
+            flash('Mã OTP đã được gửi. Vui lòng kiểm tra email hoặc điện thoại.', 'info')
+        else:
+            flash(f'Gửi OTP thất bại: {error_msg or "Cấu hình dịch vụ bị thiếu."}', 'error')
 
     return redirect(request.referrer or url_for('about'))
 
@@ -1165,6 +1276,54 @@ def auth_apple_callback():
     merge_guest_cart_to_user(user["id"], get_session_cart_key())
     session["user"] = {"id": user["id"], "full_name": user["full_name"], "email": user["email"]}
     flash("Đăng nhập Apple ID thành công.", "success")
+    return redirect(url_for('personal'))
+
+
+@app.route('/login/facebook')
+def login_facebook():
+    if not FACEBOOK_OAUTH_ENABLED:
+        return redirect(url_for('about'))
+    redirect_uri = url_for('auth_facebook_callback', _external=True)
+    return oauth.facebook.authorize_redirect(redirect_uri)
+
+
+@app.route('/auth/facebook/callback')
+def auth_facebook_callback():
+    if not FACEBOOK_OAUTH_ENABLED:
+        return redirect(url_for('about'))
+
+    try:
+        token = oauth.facebook.authorize_access_token()
+        resp = oauth.facebook.get('me?fields=id,name,email')
+        user_info = resp.json()
+    except Exception as e:
+        print(f"Facebook auth error: {e}")
+        return render_template(
+            'oauth_error.html',
+            provider='Facebook',
+            message='Đăng nhập thất bại hoặc đã bị hủy. Vui lòng thử lại.',
+        )
+
+    if not user_info or 'id' not in user_info:
+        return render_template(
+            'oauth_error.html',
+            provider='Facebook',
+            message='Không thể lấy thông tin tài khoản Facebook.',
+        )
+
+    fb_sub = user_info.get("id")
+    email = user_info.get("email")
+    full_name = user_info.get("name") or "Facebook User"
+
+    user = get_or_create_oauth_user(
+        provider="facebook",
+        oauth_sub=fb_sub,
+        full_name=full_name,
+        email=email,
+    )
+    merge_guest_cart_to_user(user["id"], get_session_cart_key())
+    session["user"] = {"id": user["id"], "full_name": user["full_name"], "email": user["email"]}
+    flash("Đăng nhập Facebook thành công.", "success")
     return redirect(url_for('personal'))
 
 
