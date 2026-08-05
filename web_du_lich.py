@@ -2018,6 +2018,67 @@ def policy_cancellation():
     return render_template('policy.html', policy_type='cancellation')
 
 
+# --- REST APIs CHO FLUTTER APP ---
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    from flask import jsonify, request
+    data = request.get_json() or {}
+    username = data.get('username')
+    password = data.get('password') # Lấy mật khẩu phục vụ xác thực nếu cần
+    
+    if not username:
+        return jsonify({"success": False, "message": "Vui lòng nhập Username hoặc Email"}), 400
+        
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM Users WHERE email = ? OR phone = ? OR full_name = ?', 
+                        (username, username, username)).fetchone()
+    
+    # Tạo sẵn user mẫu để tiện đăng nhập thử nghiệm bằng admin
+    if not user and username == 'admin':
+        conn.execute('INSERT INTO Users (full_name, email, phone) VALUES (?, ?, ?)', 
+                     ('Admin User', 'admin@example.com', '0123456789'))
+        conn.commit()
+        user = conn.execute('SELECT * FROM Users WHERE email = ?', ('admin@example.com',)).fetchone()
+        
+    conn.close()
+    
+    if user:
+        return jsonify({
+            "success": True,
+            "message": "Đăng nhập thành công",
+            "user": {
+                "id": user['id'],
+                "email": user['email'],
+                "full_name": user['full_name']
+            }
+        }), 200
+    else:
+        return jsonify({"success": False, "message": "Tài khoản không tồn tại trên hệ thống"}), 401
+
+
+@app.route('/api/data', methods=['GET'])
+def api_get_data():
+    from flask import jsonify
+    conn = get_db_connection()
+    tours = conn.execute('SELECT * FROM Tours').fetchall()
+    conn.close()
+    
+    result = []
+    for tour in tours:
+        result.append({
+            "id": tour['id'],
+            "title": tour['name'],
+            "description": f"Thời gian: {tour['duration_days']} ngày | Giá: {tour['price']:,} đ\n{tour['route_summary'] or ''}",
+            "image_url": tour['image_url'] or "https://picsum.photos/400/250"
+        })
+        
+    return jsonify({
+        "success": True,
+        "data": result
+    }), 200
+
+
 from admin.routes import admin_bp
 
 app.register_blueprint(admin_bp)
