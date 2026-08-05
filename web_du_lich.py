@@ -2086,7 +2086,7 @@ app.register_blueprint(admin_bp)
 if __name__ == '__main__':
     init_db()
     debug_mode = os.getenv('FLASK_DEBUG', '1') == '1'
-    host = os.getenv('HOST', '127.0.0.1')
+    host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '5000'))
     # Disabling reloader prevents SystemExit: 3 when running under VS Code debugger / debugpy
     use_reloader = os.getenv('FLASK_USE_RELOADER', '0') == '1'
